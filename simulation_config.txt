@@ -1,0 +1,40 @@
+# Simulation Configuration File
+
+
+LEVEL_TYPE = CAVITY
+
+# Domain dimensions
+DOMAIN_X0 = 0.0
+DOMAIN_XF = 1.00
+DOMAIN_Y0 = 0.0
+DOMAIN_YF = 1.00
+DOMAIN_Z0 = 0.0
+DOMAIN_ZF = 1.0
+
+# Simulation parameters
+TIME_STEP = 0.01      # 0.015625   # 1/64
+REYNOLDS_NUMBER = 1000.0
+EPS_COEFICIENT = 0.666666 #for step it is 0.69333333333
+GRID_SIZE = 128
+TOLERANCE = 10E-7
+NEEDS_COMPATIBILITY_CONDITION = 0
+
+#Exporting settings
+EXPORT_BASE_PATH = Exports
+
+
+
+
+
+
+
+
+
+
+
+#still needs to be done!, inn cavity, velocity is ddirichlet, neumman is zero in pressurein everything, in step, neumaan for left x velocity and neumman for pressure in almost all
+PRESSURE_SOLVER = BICGSTAB
+NEUMANN_VELOCITY_CONDITION = 1
+NEUMANN_PRESSURE_CONDITION = 1
+
+
