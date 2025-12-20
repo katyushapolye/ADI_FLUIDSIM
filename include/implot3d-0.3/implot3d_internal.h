@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // SPDX-FileCopyrightText: 2024-2025 Breno Cunha Queiroz
 
-// ImPlot3D v0.3
+// ImPlot3D v0.4 WIP
 
 // Acknowledgments:
 //  ImPlot3D is heavily inspired by ImPlot
@@ -182,6 +182,7 @@ struct ImPlot3DNextItemData {
     ImPlot3DMarker Marker;
     float MarkerSize;
     float MarkerWeight;
+    float QuiverSize;
     float FillAlpha;
     bool RenderLine;
     bool RenderFill;
