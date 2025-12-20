@@ -4,6 +4,7 @@
 
 
 #include "MAC.h"
+#include "MAC_2D.h"
 
 
 #define FLUID_CELL  0
@@ -20,6 +21,7 @@
 
 
 struct SIMULATION_CONFIG{
+
     double dh;
     double dt;
 
@@ -58,6 +60,49 @@ struct SIMULATION_CONFIG{
 
 };
 
+struct SIMULATION_CONFIG_2D{
+
+    double dh;
+    double dt;
+
+    double RE;
+    double EPS;
+
+    int Nx;
+    int Ny;
+
+
+    int GRID_SIZE = 16;
+    double TOLERANCE = 1E-5;
+
+    bool NEEDS_COMPATIBILITY_CONDITION = false;
+
+
+    Domain2D domain;
+    LevelConfiguration level;
+
+    Vec2(*VelocityBoundaryFunction)(double,  double,double);
+    double(*PressureBoundaryFunction)(double, double,double);
+    int(*SolidMaskFunction)(int,int);
+
+    
+    MAC2D* GRID_SOL;
+    MAC2D* GRID_ANT;
+
+    std::string ExportPath;
+
+    double lastPressureMatAssemblyTime;
+    double lastPressureSolveTime;
+    double lastADISolveTime;
+
+    double pressureResidual;
+    
+
+};
+
+
+
+
 struct SimulationTelemetry {
     std::vector<double> time;
     std::vector<double> div_sum;
@@ -94,10 +139,28 @@ struct SimulationTelemetry {
     }
 };
 
+struct AerodynamicInformation{
+    std::vector<double> time;
+    std::vector<double> pressure_drop;
+    std::vector<double> Cd;
+    std::vector<double> Cl;
+
+    std::vector<double> LtoDRatio;
+};
 
 
+
+
+
+inline int DIMENSION = 3;
 
 inline SIMULATION_CONFIG SIMULATION;
+inline SIMULATION_CONFIG_2D SIMULATION2D;
+
 inline SimulationTelemetry TELEMETRY;
+inline AerodynamicInformation AERODYNAMICS;
+
+
 #endif
+
 

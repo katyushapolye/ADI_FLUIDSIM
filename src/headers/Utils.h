@@ -40,12 +40,19 @@ struct Vec3 {
     double w;
 };
 
+struct Vec2 {
+    double u;
+    double v;
+};
+
+
 enum class LevelConfiguration {
     EMPTY_LEVEL,
     LID_CAVITY,
     STEP,
     OBSTACLE,
     ANALYTICAL,
+    PIPE,
 };
 
 struct Domain {
@@ -55,6 +62,14 @@ struct Domain {
     double yf;
     double z0;
     double zf;
+};
+
+struct Domain2D {
+    double x0;
+    double xf;
+    double y0;
+    double yf;
+
 };
 
 class CPUTimer {

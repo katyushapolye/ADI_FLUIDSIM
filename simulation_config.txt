@@ -1,23 +1,25 @@
 # Simulation Configuration File
 
 
+DIMENSION = 2
+
 LEVEL_TYPE = OBSTACLE
 
 # Domain dimensions
 DOMAIN_X0 = 0.0
-DOMAIN_XF = 2.0
+DOMAIN_XF = 2.2
 DOMAIN_Y0 = 0.0
-DOMAIN_YF = 1.0
+DOMAIN_YF = 0.41
 DOMAIN_Z0 = 0.0
 DOMAIN_ZF = 1.0
 
 # Simulation parameters
-TIME_STEP =  0.004   # 1/64
-REYNOLDS_NUMBER = 1000.0 #used for naming export only!
-VISCOSIT Y= 0.001
-EPS_COEFICIENT = 1.0 #for step it is 0.69333333333
-GRID_SIZE = 64
-TOLERANCE = 10E-6
+TIME_STEP =  0.001   # 1/64
+REYNOLDS_NUMBER = 100.0 #used for naming export only!
+VISCOSITY = 0.01
+EPS_COEFICIENT = 0.1 #for step it is 0.69333333333
+GRID_SIZE = 128
+TOLERANCE = 10E-12
 NEEDS_COMPATIBILITY_CONDITION = 0
 
 #Exporting settings

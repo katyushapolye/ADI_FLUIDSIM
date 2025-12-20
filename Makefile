@@ -160,7 +160,7 @@ $(BUILD_DIR)/implot3d/%.o: $(IMPLOT3D_DIR)/%.cpp | $(BUILD_DIR)/implot3d
 # Run
 ############################
 run: $(TARGET)
-	OMP_NUM_THREADS=4 ./$(TARGET)
+	OMP_NUM_THREADS=8 ./$(TARGET)
 
 ############################
 # Clean

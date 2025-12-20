@@ -1,0 +1,10 @@
+config_version=2
+solver=CG
+max_iters=10000
+norm=L2
+convergence=RELATIVE_INI_CORE
+monitor_residual=1
+tolerance=1e-9
+print_solve_stats=0
+print_grid_stats=0
+obtain_timings=0

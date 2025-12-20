@@ -290,7 +290,7 @@ void PressureSolver::InitializePressureSolver(MAC *grid,double dt)
 
 
     // matrix should be finished here
-    std::cout << "Pressure Sparse Matrix is finished!\n";
+    //std::cout << "Pressure Sparse Matrix is finished!\n";
 
 
 
@@ -324,17 +324,19 @@ void PressureSolver::InitializePressureSolver(MAC *grid,double dt)
     free(rows);
     free(values);
 
+    AMGX_config_create_from_file(&AMGX_Handle->config,"solver_pressure_config.txt");
 
-    AMGX_config_create(&AMGX_Handle->config,
-    "config_version=2, "
-    "solver=BICGSTAB, "
-    "preconditioner=MULTICOLOR_GS, "
-    "monitor_residual=1, "
-    "store_res_history=1, "
-    "convergence=ABSOLUTE, "
-    "tolerance=1e-12, "
-    "max_iters=5000, "
-    "norm=LMAX");
+    //AMGX_config_create(&AMGX_Handle->config,
+    //"config_version=2, "
+    //"solver=BiCGST, "
+    //"preconditioner=MULTICOLOR_GS, "
+    //"monitor_residual=1, "
+    //"store_res_history=0, "
+    //"print_solve_stats=0, "
+    //"convergence=ABSOLUTE, "
+    //"tolerance=1e-12, "
+    //"max_iters=1000, "
+    //"norm=LMAX");
 
 
     //Creating AMGX handles check for the negative thing
@@ -587,8 +589,6 @@ CPUTimer timer;
 }
 
 
-
-
 void PressureSolver::ProjectPressure(MAC* grid){
     
     for (int i = 1; i < Ny-1 ; i++)
@@ -716,8 +716,3 @@ void PressureSolver::ProjectPressure(MAC* grid){
 
 
 
-
-int PressureSolver::GetSolverIterations(){
-    int iterations = -1 ;
-    return iterations;
-}
