@@ -222,6 +222,13 @@ namespace ConfigReader {
                 SIMULATION2D.PressureBoundaryFunction = OBSTACLE_FLOW_PRESSURE_2D;
 
         }
+        else if (SIMULATION2D.level == LevelConfiguration::LID_CAVITY) {
+                SIMULATION2D.SolidMaskFunction = LID_CAVITY_SOLID_MASK_2D;
+                SIMULATION2D.VelocityBoundaryFunction = LID_CAVITY_FLOW_2D;
+                SIMULATION2D.PressureBoundaryFunction = LID_CAVITY_FLOW_PRESSURE_2D;
+            }
+
+        else{printf("FAILED LEVEL ASSERTION!\n");}
 
         SIMULATION2D.GRID_SOL->SetLevelGeometry(SIMULATION2D.SolidMaskFunction);
         SIMULATION2D.GRID_ANT->SetLevelGeometry(SIMULATION2D.SolidMaskFunction);

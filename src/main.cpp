@@ -1,7 +1,6 @@
 /*Made by Raphael Laroca*/
 #include <iostream>
 #include <time.h>
-#include <sys/time.h>
 #include <sstream>
 
 #include "headers/MAC.h"
@@ -30,6 +29,11 @@ void RenderUI(int IT, int F_IT, double time, double tF, double frameTime, bool& 
 void CalculateAerodynamicsCoeficients(float simTime);
 void DrawAerodynamicsTelemetry();
 
+
+//What to do
+//Export data UI
+//Magnnitude and divergentt visualization on tthe grid visualizer
+
 int main(int argc, char *argv[])
 {
     // Initialize simulation
@@ -46,15 +50,30 @@ int main(int argc, char *argv[])
         std::cerr << "Failed to initialize GLFW" << std::endl;
         return -1;
     }
+    omp_set_num_threads(8);
     
     // GL 3.3 + GLSL 330
     const char* glsl_version = "#version 330";
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+
+    glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+
+    GLFWwindow* window = glfwCreateWindow(
+        mode->width,
+        mode->height,
+        "ADI Solver Visualization",
+        nullptr,
+        nullptr
+    );
+
     
-    // Create window
-    GLFWwindow* window = glfwCreateWindow(1600, 900, "ADI Solver Visualization", nullptr, nullptr);
+    glfwSetWindowPos(window, 0, 0);
+
     if (window == nullptr) {
         std::cerr << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -63,10 +82,11 @@ int main(int argc, char *argv[])
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
     
-    // Setup Dear ImGui context
+
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImPlot::CreateContext();
+    ImPlot3D::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     
     // Setup Platform/Renderer backends
@@ -150,6 +170,7 @@ int main(int argc, char *argv[])
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImPlot::DestroyContext();
+    ImPlot3D::DestroyContext();
     ImGui::DestroyContext();
     
     glfwDestroyWindow(window);
@@ -216,7 +237,7 @@ void SimulationStep(int& IT, int& frame, double& time, double& b4Project, bool& 
             SIMULATION.GRID_SOL->SetNeumannBorder();
         }
         
-        PressureSolver::SolvePressure_AMGX(SIMULATION.GRID_SOL);
+        PressureSolver::SolvePressure_EIGEN(SIMULATION.GRID_SOL);
         b4Project = SIMULATION.GRID_SOL->GetDivSum();
         PressureSolver::ProjectPressure(SIMULATION.GRID_SOL);
         
@@ -257,7 +278,7 @@ void SimulationStep(int& IT, int& frame, double& time, double& b4Project, bool& 
         }
 
 
-        PressureSolver2D::SolvePressure_AMGX(SIMULATION2D.GRID_SOL);
+        PressureSolver2D::SolvePressure_EIGEN(SIMULATION2D.GRID_SOL);
         b4Project = SIMULATION2D.GRID_SOL->GetDivSum();
         PressureSolver2D::ProjectPressure(SIMULATION2D.GRID_SOL);
 
@@ -329,8 +350,11 @@ void RenderUI(int IT, int F_IT, double time, double tF, double frameTime, bool& 
 
 void DrawSimulationPlots()
 {
+
     ImGui::Begin("Simulation Telemetry");
     
+            const double t = TELEMETRY.time.back();
+        const double window = 5.0;
     float avail = ImGui::GetContentRegionAvail().x;
     float plot_w = avail * 0.5f - ImGui::GetStyle().ItemSpacing.x * 0.5f;
     ImVec2 plot_size(plot_w, 300);
@@ -340,6 +364,12 @@ void DrawSimulationPlots()
         ImPlot::SetupAxes("Time", "Divergence Sum",
                           ImPlotAxisFlags_None,
                           ImPlotAxisFlags_AutoFit);
+        ImPlot::SetupAxisLimits(
+            ImAxis_X1,
+            t-window*0.5,
+            t+window*0.5,
+            ImGuiCond_Always
+        );
         ImPlot::SetupAxisScale(ImAxis_Y1, ImPlotScale_Log10);
         ImPlot::PlotLine("After Projection",
             TELEMETRY.time.data(), TELEMETRY.div_sum.data(), TELEMETRY.time.size());
@@ -351,7 +381,16 @@ void DrawSimulationPlots()
     ImGui::SameLine();
     
     if (ImPlot::BeginPlot("CFL Condition", plot_size)) {
-        ImPlot::SetupAxes("Time", "CFL");
+        ImPlot::SetupAxes("Time", "CFL",
+                          ImPlotAxisFlags_None,
+                          ImPlotAxisFlags_AutoFit);
+                ImPlot::SetupAxisLimits(
+            ImAxis_X1,
+            t-window*0.5,
+            t+window*0.5,
+            ImGuiCond_Always
+        );
+
         ImPlot::PlotLine("CFL",
             TELEMETRY.time.data(), TELEMETRY.cfl.data(), TELEMETRY.time.size());
         double x = 1.0;
@@ -367,13 +406,12 @@ void DrawSimulationPlots()
             ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit
         );
 
-        const double t = TELEMETRY.time.back();
-        const double window = 5.0;
+
 
         ImPlot::SetupAxisLimits(
             ImAxis_X1,
-            t-window*0.1,
-            t+window,
+            t-window*0.5,
+            t+window*0.5,
             ImGuiCond_Always
         );
 
@@ -388,16 +426,16 @@ void DrawSimulationPlots()
     }
     ImGui::SameLine();
     
-    if (ImPlot::BeginPlot("Performance (CPU vs GPU)", plot_size)) {
+    if (ImPlot::BeginPlot("Performance (CPU vs CPU)", plot_size)) {
         double xs[] = {0.0, 1.0};
-        static const char* labels[] = {"ADI (CPU)", "Pressure (GPU)"};
+        static const char* labels[] = {"ADI (CPU)", "Pressure (CPU)"};
         double values[] = {
             TELEMETRY.cpu_time.back(),
             TELEMETRY.gpu_time.back()
         };
     
         static double y_max = 0.05;
-        y_max = std::max(y_max, 1.2 * std::max(values[0], values[1]));
+        y_max = (std::max)(y_max, 1.2 * (std::max)(values[0], values[1]));
     
         ImPlot::SetupAxes(nullptr, "Seconds");
         ImPlot::SetupAxisLimits(ImAxis_Y1, 0.0, y_max, ImGuiCond_Always);
@@ -418,6 +456,9 @@ void DrawSimulationPlots()
 
 void DrawAerodynamicsTelemetry() {
     ImGui::Begin("Aerodynamics Telemetry");
+
+    const double t = TELEMETRY.time.back();
+    const double window = 5.0;
     
     float avail = ImGui::GetContentRegionAvail().x;
     float plot_w = avail * 0.5f - ImGui::GetStyle().ItemSpacing.x * 0.5f;
@@ -431,6 +472,13 @@ void DrawAerodynamicsTelemetry() {
         
         if (!AERODYNAMICS.Cl.empty()) {
             ImPlot::PushStyleColor(ImPlotCol_Line,ImVec4(0.0,0.0,1.0,1.0f));
+
+                    ImPlot::SetupAxisLimits(
+            ImAxis_X1,
+            t-window*0.5,
+            t+window*0.5,
+            ImGuiCond_Always
+        );
             ImPlot::PlotLine("Cl",
                            AERODYNAMICS.time.data(), 
                            AERODYNAMICS.Cl.data(), 
@@ -454,6 +502,12 @@ void DrawAerodynamicsTelemetry() {
         
         if (!AERODYNAMICS.Cd.empty()) {
             ImPlot::PushStyleColor(ImPlotCol_Line,ImVec4(1.0,0.0,0.0,1.0f));
+                    ImPlot::SetupAxisLimits(
+            ImAxis_X1,
+            t-window*0.5,
+            t+window*0.5,
+            ImGuiCond_Always
+            );
             ImPlot::PlotLine("Cd",
                            AERODYNAMICS.time.data(), 
                            AERODYNAMICS.Cd.data(), 
@@ -476,6 +530,12 @@ void DrawAerodynamicsTelemetry() {
         
         if (!AERODYNAMICS.pressure_drop.empty()) {
             ImPlot::PushStyleColor(ImPlotCol_Line,ImVec4(0.0,1.0,0.0,1.0f));
+                                ImPlot::SetupAxisLimits(
+            ImAxis_X1,
+            t-window*0.5,
+            t+window*0.5,
+            ImGuiCond_Always
+        );
             ImPlot::PlotLine("DeltaP",
                            AERODYNAMICS.time.data(), 
                            AERODYNAMICS.pressure_drop.data(), 
@@ -501,6 +561,12 @@ void DrawAerodynamicsTelemetry() {
 
         
             ImPlot::PushStyleColor(ImPlotCol_Line,ImVec4(1.0,1.0,1.0,1.0f));
+                                ImPlot::SetupAxisLimits(
+            ImAxis_X1,
+            t-window*0.5,
+            t+window*0.5,
+            ImGuiCond_Always
+        );
             ImPlot::PlotLine("L/D",
                            AERODYNAMICS.time.data(), 
                            AERODYNAMICS.LtoDRatio.data(), 
@@ -529,7 +595,7 @@ void DrawAerodynamicsTelemetry() {
         auto compute_stats = [](const std::vector<double>& data, int n_samples) {
             if (data.empty()) return std::make_pair(0.0, 0.0);
             
-            int start = std::max(0, (int)data.size() - n_samples);
+            int start = (std::max)(0, (int)data.size() - n_samples);
             int count = data.size() - start;
             
             double sum = 0.0;
@@ -614,7 +680,7 @@ void DrawAerodynamicsTelemetry() {
             
             // Compute stats for L/D
             std::vector<double> ld_ratio;
-            int n_samples = std::min(100, (int)AERODYNAMICS.Cl.size());
+            int n_samples = (std::min)(100, (int)AERODYNAMICS.Cl.size());
             int start = AERODYNAMICS.Cl.size() - n_samples;
             
             for (int i = start; i < AERODYNAMICS.Cl.size(); i++) {
@@ -676,6 +742,8 @@ void UpdateTelemetry(int IT,int F_IT,double endTotal,double startTotal,double b4
             SIMULATION2D.lastPressureSolveTime
         );
     }
+
+
 }
 
 void CalculateAerodynamicsCoeficients(float simTime) {
@@ -688,10 +756,10 @@ void CalculateAerodynamicsCoeficients(float simTime) {
     int maxX = SIMULATION2D.Nx;
     int maxY = SIMULATION2D.Ny;
 
-    static int x1 = 125 / 2;
-    static int y1 = 93  / 2;
-    static int x2 = 125 / 2;
-    static int y2 = 157 / 2;
+    static int x1 = SIMULATION2D.Nx / 2;
+    static int y1 = SIMULATION2D.Ny / 2;
+    static int x2 = SIMULATION2D.Nx / 2 + 1;
+    static int y2 = SIMULATION2D.Ny / 2;
 
     ImGui::Begin("Pressure Difference");
 

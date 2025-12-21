@@ -6,7 +6,9 @@
 #include <vector>
 #include <tuple>
 #include <string>
+#if defined(__linux__)
 #include <amgx_c.h>
+#endif
 #include <ctime>
 #include <utility> // for std::forward
 
@@ -23,6 +25,7 @@ struct CSRMatrix {
     int nnz;
 };
 
+#if defined(__linux__)
 struct AMGXSolver {
     AMGX_matrix_handle AmgxA;
     AMGX_vector_handle Amgxb, Amgxx;
@@ -30,7 +33,7 @@ struct AMGXSolver {
     AMGX_resources_handle rsrc;
     AMGX_config_handle config;
 };
-
+#endif
 
 
 

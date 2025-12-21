@@ -345,6 +345,9 @@ void MAC2D::SetNeumannBorderPressure()
 
 double MAC2D::GetDivergencyAt(int i, int j)
 {
+    if(this->GetSolid(i,j) != FLUID_CELL){
+        return 0.0; //no sense to calculate divergency in non fluid cells
+    }
     double divU = (this->GetU(i, j + 1) - this->GetU(i, j)) / this->dh;
     double divV = (this->GetV(i + 1, j) - this->GetV(i, j)) / this->dh;
     return (divU + divV);

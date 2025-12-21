@@ -1537,16 +1537,7 @@ void ADI::InitializeADI(MAC* grid,double dt,Vec3(*VelocityBorderFunction)(double
 //IM BREAKING the component on the exit
 void ADI::SolveADIStep(MAC* gridAnt,MAC* gridSol,double time){
 
-    //commoon to everyone
-    //MAC X_STEP_SOL = MAC();
-    //MAC Y_STEP_SOL = MAC();
-    //MAC Z_STEP_SOL = MAC();
 
-
-    //gridSol->SetGrid(VelocityBorderFunction,PressureFunction,time+dt);
-    //X_STEP_SOL.SetGrid(VelocityBorderFunction,PressureFunction,time+dt);
-    //Y_STEP_SOL.SetGrid(VelocityBorderFunction,PressureFunction,time+dt);
-    //Z_STEP_SOL.SetGrid(VelocityBorderFunction,PressureFunction,time+dt);
 
 
     double start = omp_get_wtime();

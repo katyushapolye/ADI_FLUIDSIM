@@ -262,7 +262,7 @@ inline int BACKWARDS_FACING_STEP_SOLID_MASK_2D(int i, int j) {
 }
 
 /*//////////////////////////////////////////////
-///////////OBSTACLE Facing Step 2D ///////////////
+///////////OBSTACLE 2D ///////////////
 *///////////////////////////////////////////////
 
 inline Vec2 OBSTACLE_FLOW_2D(double x, double y,double t){
@@ -370,5 +370,42 @@ inline int OBSTACLE_SOLID_MASK_2D(int  i,int j){
 
 
 }
+
+/*//////////////////////////////////////////////
+///////////LID DRIVEN CAVITY FLOW 2D ///////////////
+*///////////////////////////////////////////////
+
+inline Vec2 LID_CAVITY_FLOW_2D(double x, double y,double t){
+    Vec2 r;
+    r.u = 0.0;
+    r.v = 0.0;
+
+    if(y >= 1.0 - (SIMULATION2D.dh*0.55)){
+        r.u = 1.0;
+    }
+
+
+    return r;
+
+}
+
+inline double LID_CAVITY_FLOW_PRESSURE_2D(double x, double y,double t){
+
+    return 0.0;
+
+}
+
+inline int LID_CAVITY_SOLID_MASK_2D(int i,int j){
+    if(i == 0 || j == 0 || i == SIMULATION2D.Ny-1 ||  j == SIMULATION2D.Nx-1){
+        return SOLID_CELL;
+    }
+    else{
+
+
+        return FLUID_CELL;
+    }
+}
+
+
 
 #endif

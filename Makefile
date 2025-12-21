@@ -1,20 +1,21 @@
 ############################
-# AMGX paths
+# Compilers
 ############################
-AMGX_PATH := $(HOME)/SDK/AMGX
-AMGX_INCLUDE_PATH := $(AMGX_PATH)/include
-AMGX_BUILD_PATH := $(AMGX_PATH)/build
+CXX := g++
 
 ############################
-# CUDA paths
+# C++ flags
 ############################
-CUDA_PATH := /usr/local/cuda
-CUDA_LIB_PATH := $(CUDA_PATH)/lib64
+CXXFLAGS := -std=c++17 -O3 -Wall -Wextra -Wno-unused-parameter
+CXXFLAGS += -fopenmp -MMD -MP
+CXXFLAGS += -Isrc/headers
+CXXFLAGS += -Iinclude
 
 ############################
 # Eigen
 ############################
 EIGEN_PATH := Eigen
+CXXFLAGS += -I$(EIGEN_PATH)
 
 ############################
 # ImGui / ImPlot / ImPlot3D
@@ -23,58 +24,43 @@ IMGUI_DIR := include/imgui-1.92.4
 IMPLOT_DIR := include/implot-0.17
 IMPLOT3D_DIR := include/implot3d-0.3
 
-############################
-# Compilers
-############################
-CXX := g++
-NVCC := nvcc
-
-############################
-# C++ flags
-############################
-CXXFLAGS := -std=c++17 -Wall -Wextra -Wno-unused-parameter -Wno-deprecated-copy
-CXXFLAGS += -O3 -fopenmp -MMD -MP
-CXXFLAGS += -Isrc/headers
-CXXFLAGS += -I$(CUDA_PATH)/include
-CXXFLAGS += -I$(AMGX_INCLUDE_PATH) -I$(AMGX_BUILD_PATH)
-CXXFLAGS += -I$(EIGEN_PATH)
 CXXFLAGS += -I$(IMGUI_DIR) -I$(IMGUI_DIR)/backends
 CXXFLAGS += -I$(IMPLOT_DIR)
 CXXFLAGS += -I$(IMPLOT3D_DIR)
 
 ############################
-# NVCC flags
+# Libraries (Windows)
 ############################
-NVCCFLAGS := -std=c++17 -O3 -Xcompiler -Wall,-Wextra -MMD -MP
-NVCCFLAGS += -Isrc/headers
-NVCCFLAGS += -I$(CUDA_PATH)/include
-NVCCFLAGS += -I$(AMGX_INCLUDE_PATH) -I$(AMGX_BUILD_PATH)
-NVCCFLAGS += -I$(EIGEN_PATH)
+############################
+# GLFW
+############################
+GLFW_DIR := $(CURDIR)/libs/glfw-3.4.bin.WIN64
+GLFW_LIB := $(GLFW_DIR)/lib-mingw-w64/libglfw3.a
 
-############################
-# Linker flags
-############################
-LDFLAGS := -L$(CUDA_LIB_PATH) -L$(AMGX_BUILD_PATH)
-LDFLAGS += -lamgx -lamgxsh -lmpi
-LDFLAGS += -lcudart -lcublas -lcusparse -lcusolver
-LDFLAGS += -lcudadevrt -lcudart_static
-LDFLAGS += -fopenmp -lrt -lpthread -ldl
-LDFLAGS += -lglfw -lGL
+CXXFLAGS += -I$(GLFW_DIR)/include
+LDFLAGS  += $(GLFW_LIB)
+
+LDFLAGS :=
+LDFLAGS += $(GLFW_LIB)
+LDFLAGS += $(ASSIMP_LIB)
+
+# OpenGL + Win32
+LDFLAGS += -lopengl32 -lgdi32 -luser32 -lshell32
+
+# Misc
+LDFLAGS += -fopenmp -lstdc++ -lpthread
 
 ############################
 # Directories
 ############################
 SRC_DIR := src
-CUDA_SRC_DIR := $(SRC_DIR)/cuda
 BUILD_DIR := build
-CUDA_BUILD_DIR := $(BUILD_DIR)/cuda
 BIN_DIR := bin
 
 ############################
 # Sources
 ############################
 SRCS := $(wildcard $(SRC_DIR)/*.cpp)
-CUDA_SRCS := $(wildcard $(CUDA_SRC_DIR)/*.cu)
 
 IMGUI_SRCS := \
   $(IMGUI_DIR)/imgui.cpp \
@@ -100,13 +86,11 @@ IMPLOT3D_SRCS := \
 # Objects
 ############################
 OBJS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SRCS))
-CUDA_OBJS := $(patsubst $(CUDA_SRC_DIR)/%.cu,$(CUDA_BUILD_DIR)/%.o,$(CUDA_SRCS))
-
 IMGUI_OBJS := $(patsubst $(IMGUI_DIR)/%.cpp,$(BUILD_DIR)/imgui/%.o,$(IMGUI_SRCS))
 IMPLOT_OBJS := $(patsubst $(IMPLOT_DIR)/%.cpp,$(BUILD_DIR)/implot/%.o,$(IMPLOT_SRCS))
 IMPLOT3D_OBJS := $(patsubst $(IMPLOT3D_DIR)/%.cpp,$(BUILD_DIR)/implot3d/%.o,$(IMPLOT3D_SRCS))
 
-ALL_OBJS := $(OBJS) $(CUDA_OBJS) $(IMGUI_OBJS) $(IMPLOT_OBJS) $(IMPLOT3D_OBJS)
+ALL_OBJS := $(OBJS) $(IMGUI_OBJS) $(IMPLOT_OBJS) $(IMPLOT3D_OBJS)
 
 ############################
 # Dependencies
@@ -116,18 +100,21 @@ DEPS := $(ALL_OBJS:.o=.d)
 ############################
 # Target
 ############################
-TARGET := $(BIN_DIR)/program
+TARGET := $(BIN_DIR)/program.exe
 
 all: $(TARGET)
 
 ############################
 # Directories
 ############################
-$(BUILD_DIR) $(CUDA_BUILD_DIR) \
+MKDIR_P = if not exist "$@" mkdir "$@"
+
+$(BUILD_DIR) \
 $(BUILD_DIR)/imgui $(BUILD_DIR)/imgui/backends \
 $(BUILD_DIR)/implot $(BUILD_DIR)/implot3d \
 $(BIN_DIR):
-	mkdir -p $@
+	$(MKDIR_P)
+
 
 ############################
 # Link
@@ -140,9 +127,6 @@ $(TARGET): $(ALL_OBJS) | $(BIN_DIR)
 ############################
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-$(CUDA_BUILD_DIR)/%.o: $(CUDA_SRC_DIR)/%.cu | $(CUDA_BUILD_DIR)
-	$(NVCC) $(NVCCFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/imgui/%.o: $(IMGUI_DIR)/%.cpp | $(BUILD_DIR)/imgui $(BUILD_DIR)/imgui/backends
 	$(CXX) $(CXXFLAGS) -c $< -o $@
@@ -160,7 +144,7 @@ $(BUILD_DIR)/implot3d/%.o: $(IMPLOT3D_DIR)/%.cpp | $(BUILD_DIR)/implot3d
 # Run
 ############################
 run: $(TARGET)
-	OMP_NUM_THREADS=8 ./$(TARGET)
+	./$(TARGET)
 
 ############################
 # Clean
@@ -171,4 +155,3 @@ clean:
 -include $(DEPS)
 
 .PHONY: all run clean
-

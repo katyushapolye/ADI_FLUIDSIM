@@ -11,7 +11,7 @@ int *PressureSolver::collums = nullptr;
 int *PressureSolver::rows = nullptr;
 double *PressureSolver::values = nullptr;
 CSRMatrix *PressureSolver::PRESSURE_MATRIX = nullptr;
-AMGXSolver *PressureSolver::AMGX_Handle = nullptr;
+
 
 
 
@@ -31,10 +31,10 @@ void PressureSolver::InitializePressureSolver(MAC *grid,double dt)
     double dh = SIMULATION.dh;
     PressureSolver::IDP = VectorXd(Nx * Ny * Nz);
     PressureSolver::IDP.setConstant(-1);
+    Eigen::setNbThreads(8);
 
 
 
-    AMGX_initialize();
 
     
 
@@ -315,16 +315,16 @@ void PressureSolver::InitializePressureSolver(MAC *grid,double dt)
 
 
     PressureSolver::PRESSURE_MATRIX_EIGEN = mat;
-    writeSparseMatrixToFile(PRESSURE_MATRIX_EIGEN,"Exports/Eigen/PressureMat.txt");
+    //writeSparseMatrixToFile(PRESSURE_MATRIX_EIGEN,"Exports/Eigen/PressureMat.txt");
 
     PRESSURE_MATRIX = coo_to_csr(rows,collums,values,NON_ZERO,MatSize,MatSize);
-    PressureSolver::AMGX_Handle = new AMGXSolver();
+
 
     free(collums);
     free(rows);
     free(values);
 
-    AMGX_config_create_from_file(&AMGX_Handle->config,"solver_pressure_config.txt");
+   
 
     //AMGX_config_create(&AMGX_Handle->config,
     //"config_version=2, "
@@ -339,31 +339,7 @@ void PressureSolver::InitializePressureSolver(MAC *grid,double dt)
     //"norm=LMAX");
 
 
-    //Creating AMGX handles check for the negative thing
-    //run on device (GPU), double precision for all, integer or indexes
    
-    AMGX_resources_create_simple(&AMGX_Handle->rsrc, AMGX_Handle->config);
-
-    AMGX_matrix_create(&AMGX_Handle->AmgxA, AMGX_Handle->rsrc, AMGX_mode_dDDI);
-    AMGX_vector_create(&AMGX_Handle->Amgxb, AMGX_Handle->rsrc, AMGX_mode_dDDI);
-    AMGX_vector_create(&AMGX_Handle->Amgxx, AMGX_Handle->rsrc, AMGX_mode_dDDI);
-
-
-    for (int i = 0; i < NON_ZERO; i++) {
-    PRESSURE_MATRIX->values[i] *= (1.0 / (dh * dh));
-    }   
-
-
-
-    AMGX_matrix_upload_all(AMGX_Handle->AmgxA,MatSize,NON_ZERO,1,1,PRESSURE_MATRIX->row_ptr,PRESSURE_MATRIX->col_ind,PRESSURE_MATRIX->values,nullptr);
-    AMGX_vector_set_zero(AMGX_Handle->Amgxx,MatSize,1);
-    AMGX_vector_set_zero(AMGX_Handle->Amgxb,MatSize,1);
-
-    //in theory, we have a valid solvver here!
-    AMGX_solver_create(&AMGX_Handle->solver,AMGX_Handle->rsrc,AMGX_mode_dDDI,AMGX_Handle->config);
-    AMGX_solver_setup(AMGX_Handle->solver,AMGX_Handle->AmgxA);
-
-
 
 
 
@@ -414,6 +390,7 @@ void PressureSolver::SolvePressure_EIGEN(MAC* grid){
        LHS(i) = LHS(i) - mean;
     }
     }
+
 
     Eigen::BiCGSTAB<Eigen::SparseMatrix<double>, Eigen::DiagonalPreconditioner<double>> solver;
     solver.setMaxIterations(2000);
@@ -546,10 +523,7 @@ CPUTimer timer;
     }
 
 
-    //solving!
-    AMGX_vector_upload(AMGX_Handle->Amgxb,MatSize,1,LHS);
-    AMGX_solver_solve_with_0_initial_guess(AMGX_Handle->solver,AMGX_Handle->Amgxb,AMGX_Handle->Amgxx);
-    AMGX_vector_download(AMGX_Handle->Amgxx,SOL);
+
 
 
 
@@ -582,8 +556,7 @@ CPUTimer timer;
 
     free(LHS);
     free(SOL);
-    AMGX_vector_set_zero(AMGX_Handle->Amgxx,MatSize,1);
-    AMGX_vector_set_zero(AMGX_Handle->Amgxb,MatSize,1);
+
 
 
 }

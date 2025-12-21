@@ -10,7 +10,7 @@ int *PressureSolver2D::collums = nullptr;
 int *PressureSolver2D::rows = nullptr;
 double *PressureSolver2D::values = nullptr;
 CSRMatrix *PressureSolver2D::PRESSURE_MATRIX = nullptr;
-AMGXSolver *PressureSolver2D::AMGX_Handle = nullptr;
+
 
 
 
@@ -28,8 +28,7 @@ void PressureSolver2D::InitializePressureSolver(MAC2D *grid, double dt)
     double dh = SIMULATION2D.dh;
     PressureSolver2D::IDP = VectorXd(Nx * Ny);
     PressureSolver2D::IDP.setConstant(-1);  // FIX 1: Initialize to -1
-
-    AMGX_initialize();
+    Eigen::setNbThreads(8);
 
     int c = 0;
     for (int i = 0; i < Ny; i++)
@@ -214,28 +213,7 @@ void PressureSolver2D::InitializePressureSolver(MAC2D *grid, double dt)
     free(rows);
     free(values);
 
-    PressureSolver2D::AMGX_Handle = new AMGXSolver();
-
-    AMGX_config_create_from_file(&AMGX_Handle->config, "solver_pressure_config.txt");
-    AMGX_resources_create_simple(&AMGX_Handle->rsrc, AMGX_Handle->config);
-
-    AMGX_matrix_create(&AMGX_Handle->AmgxA, AMGX_Handle->rsrc, AMGX_mode_dDDI);
-    AMGX_vector_create(&AMGX_Handle->Amgxb, AMGX_Handle->rsrc, AMGX_mode_dDDI);
-    AMGX_vector_create(&AMGX_Handle->Amgxx, AMGX_Handle->rsrc, AMGX_mode_dDDI);
-
-    for (int i = 0; i < NON_ZERO; i++)
-    {
-        PRESSURE_MATRIX->values[i] *= (1.0 / (dh * dh));
-    }
-
-    AMGX_matrix_upload_all(AMGX_Handle->AmgxA, MatSize, NON_ZERO, 1, 1, 
-                           PRESSURE_MATRIX->row_ptr, PRESSURE_MATRIX->col_ind, 
-                           PRESSURE_MATRIX->values, nullptr);
-    AMGX_vector_set_zero(AMGX_Handle->Amgxx, MatSize, 1);
-    AMGX_vector_set_zero(AMGX_Handle->Amgxb, MatSize, 1);
-
-    AMGX_solver_create(&AMGX_Handle->solver, AMGX_Handle->rsrc, AMGX_mode_dDDI, AMGX_Handle->config);
-    AMGX_solver_setup(AMGX_Handle->solver, AMGX_Handle->AmgxA);
+    
 }
 
 void PressureSolver2D::SolvePressure_EIGEN(MAC2D* grid)
@@ -281,9 +259,9 @@ void PressureSolver2D::SolvePressure_EIGEN(MAC2D* grid)
         }
     }
 
-    Eigen::BiCGSTAB<Eigen::SparseMatrix<double>, Eigen::DiagonalPreconditioner<double>> solver;
+    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>> solver;
     solver.setMaxIterations(2000);
-    solver.setTolerance(1e-12);
+    solver.setTolerance(1e-9);
     solver.compute(PRESSURE_MATRIX_EIGEN);
     Eigen::VectorXd SOL = VectorXd(MatSize);
     SOL = solver.solve(LHS);
@@ -306,70 +284,7 @@ void PressureSolver2D::SolvePressure_EIGEN(MAC2D* grid)
 
 void PressureSolver2D::SolvePressure_AMGX(MAC2D* grid)
 {
-    PressureSolver2D::dt = SIMULATION2D.dt;  // FIX: Use SIMULATION2D
-    CPUTimer timer;
-    timer.start();
-    
-    double dh = grid->dh;
-    int MatSize = grid->GetFluidCellCount();
-    
-    double* LHS = (double*)calloc(MatSize, sizeof(double));
-    double* SOL = (double*)calloc(MatSize, sizeof(double));
-
-    double mean = 0.0;
-
-    // Build RHS vector using IDP indexing
-    for (int i = 1; i < Ny - 1; i++)
-    {
-        for (int j = 1; j < Nx - 1; j++)
-        {
-            int id = GetIDP(i, j);
-            if (id == -1) continue;
-
-            LHS[id] = (1.0/dt) * grid->GetDivergencyAt(i, j);
-            mean += LHS[id];
-
-            if (grid->GetSolid(i, j-1) == INFLOW_CELL)
-            {
-                LHS[id] += -(1.0/dt) * 
-                    (grid->GetU(i, 1) - 
-                     SIMULATION2D.VelocityBoundaryFunction(dh, i*dh + dh/2.0, 0).u);
-            }
-        }
-    }
-
-    if (SIMULATION2D.NEEDS_COMPATIBILITY_CONDITION)  
-    {
-        mean = mean / MatSize;
-        for (int i = 0; i < MatSize; i++)
-        {
-            LHS[i] = LHS[i] - mean;
-        }
-    }
-
-    // Solving!
-    AMGX_vector_upload(AMGX_Handle->Amgxb, MatSize, 1, LHS);
-    AMGX_solver_solve_with_0_initial_guess(AMGX_Handle->solver, AMGX_Handle->Amgxb, AMGX_Handle->Amgxx);
-    AMGX_vector_download(AMGX_Handle->Amgxx, SOL);
-
-    // Write solution back using IDP indexing
-    for (int i = 1; i < Ny - 1; i++)
-    {
-        for (int j = 1; j < Nx - 1; j++)
-        {
-            int id = GetIDP(i, j);
-            if (id == -1) continue;
-            grid->SetP(i, j, SOL[id]);
-        }
-    }
-
-    grid->SetNeumannBorderPressure();
-    SIMULATION2D.lastPressureSolveTime = timer.stop();  
-
-    free(LHS);
-    free(SOL);
-    AMGX_vector_set_zero(AMGX_Handle->Amgxx, MatSize, 1);
-    AMGX_vector_set_zero(AMGX_Handle->Amgxb, MatSize, 1);
+   
 }
 
 
@@ -410,6 +325,5 @@ void PressureSolver2D::ProjectPressure(MAC2D* grid)
 
 int PressureSolver2D::GetSolverIterations(){
     int iterations;
-    AMGX_solver_get_iterations_number(AMGX_Handle->solver, &iterations);
     return iterations;
 }
