@@ -20,20 +20,26 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <implot.h>
-#include <implot3d.h>
 
 void InitializeSimulation(const std::string& configFile = "simulation_config.txt");
+void InitializeTelemetryExport();
+
 void UpdateTelemetry(int IT,int F_IT,double endTotal,double startTotal,double b4ProjectDiv,int &frame,float simTime);
 void DrawSimulationPlots();
 void SimulationStep(int& IT, int& frame, double& time, double& b4Project, bool& simulationRunning, GridVisualizer* visualizer);
+
 void RenderUI(int IT, int F_IT, double time, double tF, double frameTime, bool& simulationRunning, bool& stepOnce);
+void RenderExportUI();
+
 void CalculateAerodynamicsCoeficients(float simTime);
 void DrawAerodynamicsTelemetry();
+void HandleExports(int IT, int frame);
 
 
-//What to do
-//Export data UI
-//Magnnitude and divergentt visualization on tthe grid visualizer
+//what to do
+//tidy tthis main, have 2 more files
+//simulation manager that abstract the step with function pointers
+//visualization manaage, that handles all the UI stuff (mege grid visualizer into it)
 
 int main(int argc, char *argv[])
 {
@@ -45,6 +51,8 @@ int main(int argc, char *argv[])
     else{
         InitializeSimulation();
     }
+
+    InitializeTelemetryExport();
     
     // Initialize GLFW
     if (!glfwInit()) {
@@ -120,6 +128,16 @@ int main(int argc, char *argv[])
     
     bool simulationRunning = false;
     bool stepOnce = false;
+
+    //this shos the initial conditions andd solid mask
+    if(DIMENSION == 2) {
+        SIMULATION2D.GRID_ANT->SetBorder(SIMULATION2D.VelocityBoundaryFunction,SIMULATION2D.PressureBoundaryFunction,0);
+        visualizer->UpdateGrid(SIMULATION2D.GRID_ANT);
+    }
+    else{
+        SIMULATION.GRID_ANT->SetBorder(SIMULATION.VelocityBoundaryFunction,SIMULATION.PressureBoundaryFunction,0);
+        visualizer->UpdateGrid(SIMULATION.GRID_ANT);
+    }
     
     // Main loop
     while (!glfwWindowShouldClose(window) && time < tF)
@@ -137,6 +155,7 @@ int main(int argc, char *argv[])
         // Draw simulation plots
         DrawSimulationPlots();
         DrawAerodynamicsTelemetry();
+        RenderExportUI();
         
         // Run simulation step if needed
         if (simulationRunning || stepOnce) {
@@ -290,9 +309,7 @@ void SimulationStep(int& IT, int& frame, double& time, double& b4Project, bool& 
         int F_IT = 100000.0 / SIMULATION2D.dt;
 
         UpdateTelemetry(IT, F_IT, endTotal, startTotal, b4Project, frame, time);
-        if(SIMULATION2D.level == LevelConfiguration::OBSTACLE){
-            CalculateAerodynamicsCoeficients(time);
-        }
+
 
         if (IT > 10 && SIMULATION2D.GRID_ANT->MaxAbsoluteDifference(*SIMULATION2D.GRID_SOL) < SIMULATION2D.TOLERANCE) {
             if(SIMULATION2D.level == LevelConfiguration::STEP || 
@@ -313,6 +330,11 @@ void SimulationStep(int& IT, int& frame, double& time, double& b4Project, bool& 
         }
 
     }
+
+    if(SIMULATION2D.level == LevelConfiguration::OBSTACLE || SIMULATION.level == LevelConfiguration::OBSTACLE){
+            CalculateAerodynamicsCoeficients(time);
+    }
+    HandleExports(IT, frame);
 }
 
 void RenderUI(int IT, int F_IT, double time, double tF, double frameTime, bool& simulationRunning, bool& stepOnce) {
@@ -348,6 +370,9 @@ void RenderUI(int IT, int F_IT, double time, double tF, double frameTime, bool& 
     
     ImGui::End();
 }
+
+
+
 
 void DrawSimulationPlots()
 {
@@ -713,7 +738,6 @@ void DrawAerodynamicsTelemetry() {
     ImGui::End();
 }
 
-
 void UpdateTelemetry(int IT,int F_IT,double endTotal,double startTotal,double b4ProjectDiv,int &frame,float simTime){
     if(DIMENSION == 3){
         double cfl = (SIMULATION.GRID_SOL->GetMaxVelocity() / SIMULATION.dh) * SIMULATION.dt;
@@ -748,6 +772,9 @@ void UpdateTelemetry(int IT,int F_IT,double endTotal,double startTotal,double b4
 }
 
 void CalculateAerodynamicsCoeficients(float simTime) {
+    if(DIMENSION == 2) {
+         // Only implemented for 2D
+    
     
     /*pressure drop*/
     AERODYNAMICS.time.push_back(simTime);
@@ -756,6 +783,7 @@ void CalculateAerodynamicsCoeficients(float simTime) {
 
     int maxX = SIMULATION2D.Nx;
     int maxY = SIMULATION2D.Ny;
+    float dh = SIMULATION2D.dh; // Get the grid spacing
 
     static int x1 = SIMULATION2D.Nx / 2;
     static int y1 = SIMULATION2D.Ny / 2;
@@ -764,28 +792,36 @@ void CalculateAerodynamicsCoeficients(float simTime) {
 
     ImGui::Begin("Pressure Difference");
 
-    // Sliders (safe & easy)
-    ImGui::SliderInt("X1", &x1, 0, maxX - 1);
-    ImGui::SliderInt("Y1", &y1, 0, maxY - 1);
-    ImGui::Separator();
-    ImGui::SliderInt("X2", &x2, 0, maxX - 1);
-    ImGui::SliderInt("Y2", &y2, 0, maxY - 1);
+    // Sliders with physical coordinates displayed
+    ImGui::SliderInt("X1", &x1, 0, maxX - 1,"%d", ImGuiSliderFlags_None);
+    ImGui::SameLine(); ImGui::Text("= %.3f", x1 * dh);
 
-    // Compute difference
+    ImGui::SliderInt("Y1", &y1, 0, maxY - 1, "%d", ImGuiSliderFlags_None);
+    ImGui::SameLine(); ImGui::Text("= %.3f", y1 * dh);
+
+    ImGui::Separator();
+
+    ImGui::SliderInt("X2", &x2, 0, maxX - 1, "%d", ImGuiSliderFlags_None);
+    ImGui::SameLine(); ImGui::Text("= %.3f", x2 * dh);
+
+    ImGui::SliderInt("Y2", &y2, 0, maxY - 1, "%d", ImGuiSliderFlags_None);
+    ImGui::SameLine(); ImGui::Text("= %.3f", y2 * dh);
+
+    // Compute difference (stays the same)
     double p1 = SIMULATION2D.GRID_SOL->GetP(y1, x1);
     double p2 = SIMULATION2D.GRID_SOL->GetP(y2, x2);
     double pdif = p1 - p2;
 
-    ImGui::Text("P1 = %.6f", p1);
-    ImGui::Text("P2 = %.6f", p2);
-    ImGui::Text("Difference = %.6f", pdif);
-
+    // Display with physical positions
+    ImGui::Separator();
+    ImGui::Text("Point 1: (%.3f, %.3f) -> P = %.6f", x1 * dh, y1 * dh, p1);
+    ImGui::Text("Point 2: (%.3f, %.3f) -> P = %.6f", x2 * dh, y2 * dh, p2);
+    ImGui::Text("Pressure Difference: %.6f", pdif);
     ImGui::End();
 
 
 
 
-    double dh = SIMULATION2D.dh;
     double mi = SIMULATION2D.EPS; // kinematic viscosity
     MAC2D* grid = SIMULATION2D.GRID_SOL;
 
@@ -867,11 +903,10 @@ void CalculateAerodynamicsCoeficients(float simTime) {
             }
         }
     }
-
-    //the coefficient is defined as 2/(Umean^2 L)
-    double uMean = 1.0; //defined as 2/3 of U0
-    double Cd = (2.0/(uMean*0.1))*Fd;
-    double Cl = (2.0/(uMean*0.1))*Fl;
+    double coeff = 2.0 / (pow(SIMULATION.MEAN_VELOCITY,2)* SIMULATION.CHARACTERISTIC_LENGTH);
+    //the coefficient is defined as 2/(Umean^2 L) (L is the characteristic lenghth)
+    double Cd = coeff*Fd;
+    double Cl = coeff*Fl;
 
 
     
@@ -880,4 +915,442 @@ void CalculateAerodynamicsCoeficients(float simTime) {
     AERODYNAMICS.Cd.push_back(Cd);
     AERODYNAMICS.pressure_drop.push_back(pdif);
     AERODYNAMICS.LtoDRatio.push_back(Cl/Cd);
+    }
+    else if(DIMENSION == 3) {
+        // 3D implementation
+        
+        AERODYNAMICS.time.push_back(simTime);
+        
+        int maxX = SIMULATION.Nx;
+        int maxY = SIMULATION.Ny;
+        int maxZ = SIMULATION.Nz;
+
+        static int x1 = SIMULATION.Nx / 2;
+        static int y1 = SIMULATION.Ny / 2;
+        static int z1 = SIMULATION.Nz / 2;
+        static int x2 = SIMULATION.Nx / 2 + 1;
+        static int y2 = SIMULATION.Ny / 2;
+        static int z2 = SIMULATION.Nz / 2;
+
+        ImGui::Begin("Pressure Difference 3D");
+
+        // Point 1
+        ImGui::SliderInt("X1", &x1, 0, maxX - 1);
+        ImGui::SliderInt("Y1", &y1, 0, maxY - 1);
+        ImGui::SliderInt("Z1", &z1, 0, maxZ - 1);
+        ImGui::Separator();
+        
+        // Point 2
+        ImGui::SliderInt("X2", &x2, 0, maxX - 1);
+        ImGui::SliderInt("Y2", &y2, 0, maxY - 1);
+        ImGui::SliderInt("Z2", &z2, 0, maxZ - 1);
+
+        // Compute pressure difference
+        double p1 = SIMULATION.GRID_SOL->GetP(z1, y1, x1);
+        double p2 = SIMULATION.GRID_SOL->GetP(z2, y2, x2);
+        double pdif = p1 - p2;
+
+        ImGui::Text("P1 = %.6f", p1);
+        ImGui::Text("P2 = %.6f", p2);
+        ImGui::Text("Difference = %.6f", pdif);
+
+        ImGui::End();
+
+        double dh = SIMULATION.dh;
+        double mi = SIMULATION.EPS; // kinematic viscosity
+        MAC* grid = SIMULATION.GRID_SOL;
+
+        // Velocity gradients
+        double dudx, dudy, dudz;
+        double dvdx, dvdy, dvdz;
+        double dwdx, dwdy, dwdz;
+
+        double Fd = 0.0; // Drag force (x-direction)
+        double Fl = 0.0; // Lift force (y-direction)
+        double Fs = 0.0; // Side force (z-direction)
+        
+        // For all non-boundary cell centers
+        for(int k = 1; k < SIMULATION.Nz-1; k++) {
+            for(int i = 1; i < SIMULATION.Ny-1; i++) {
+                for(int j = 1; j < SIMULATION.Nx-1; j++) {
+                    // Skip cells that are not solid
+                    if(grid->GetSolid(k,i,j) != SOLID_CELL) {
+                        continue;
+                    }
+
+                    double dA = dh * dh; // Face area
+
+                    // ===== RIGHT FACE (X+) - normal vector (1,0,0) =====
+                    if(grid->GetSolid(k,i,j+1) == FLUID_CELL) {
+                        dudx = (grid->GetU(k,i,j+2) - 0) / dh;
+                        dvdx = (grid->getVatU(k,i,j+2) - 0) / dh;
+                        dwdx = (grid->getWatU(k,i,j+2) - 0) / dh;
+                        dudy = (grid->getUatV(k,i+1,j+1) - grid->getUatV(k,i,j+1)) / dh;
+                        dudz = (grid->getUatW(k+1,i,j+1) - grid->getUatW(k,i,j+1)) / dh;
+
+                        // Stress tensor components for right face
+                        double tau_xx = 2.0 * mi * dudx - grid->GetP(k,i,j+1);
+                        double tau_yx = mi * (dudy + dvdx);
+                        double tau_zx = mi * (dudz + dwdx);
+
+                        // Force contribution (normal: 1,0,0)
+                        Fd += tau_xx * dA;
+                        Fl += tau_yx * dA;
+                        Fs += tau_zx * dA;
+                    }
+
+                    // ===== LEFT FACE (X-) - normal vector (-1,0,0) =====
+                    if(grid->GetSolid(k,i,j-1) == FLUID_CELL) {
+                        dudx = (0 - grid->GetU(k,i,j-1)) / dh;
+                        dvdx = (0 - grid->getVatU(k,i,j-1)) / dh;
+                        dwdx = (0 - grid->getWatU(k,i,j-1)) / dh;
+                        dudy = (grid->getUatV(k,i+1,j-1) - grid->getUatV(k,i,j-1)) / dh;
+                        dudz = (grid->getUatW(k+1,i,j-1) - grid->getUatW(k,i,j-1)) / dh;
+
+                        // Stress tensor components for left face
+                        double tau_xx = 2.0 * mi * dudx - grid->GetP(k,i,j-1);
+                        double tau_yx = mi * (dudy + dvdx);
+                        double tau_zx = mi * (dudz + dwdx);
+
+                        // Force contribution (normal: -1,0,0)
+                        Fd += -tau_xx * dA;
+                        Fl += -tau_yx * dA;
+                        Fs += -tau_zx * dA;
+                    }
+
+                    // ===== TOP FACE (Y+) - normal vector (0,1,0) =====
+                    if(grid->GetSolid(k,i+1,j) == FLUID_CELL) {
+                        dvdy = (grid->GetV(k,i+2,j) - 0) / dh;
+                        dvdx = (grid->getVatU(k,i+1,j+1) - grid->getVatU(k,i+1,j)) / dh;
+                        dvdz = (grid->getVatW(k+1,i+1,j) - grid->getVatW(k,i+1,j)) / dh;
+                        dudy = (grid->getUatV(k,i+2,j) - 0) / dh;
+                        dwdy = (grid->getWatV(k,i+2,j) - 0) / dh;
+
+                        // Stress tensor components for top face
+                        double tau_xy = mi * (dudy + dvdx);
+                        double tau_yy = 2.0 * mi * dvdy - grid->GetP(k,i+1,j);
+                        double tau_zy = mi * (dvdz + dwdy);
+
+                        // Force contribution (normal: 0,1,0)
+                        Fd += tau_xy * dA;
+                        Fl += tau_yy * dA;
+                        Fs += tau_zy * dA;
+                    }
+
+                    // ===== BOTTOM FACE (Y-) - normal vector (0,-1,0) =====
+                    if(grid->GetSolid(k,i-1,j) == FLUID_CELL) {
+                        dvdy = (0 - grid->GetV(k,i-1,j)) / dh;
+                        dvdx = (grid->getVatU(k,i-1,j+1) - grid->getVatU(k,i-1,j)) / dh;
+                        dvdz = (grid->getVatW(k+1,i-1,j) - grid->getVatW(k,i-1,j)) / dh;
+                        dudy = (0 - grid->getUatV(k,i-1,j)) / dh;
+                        dwdy = (0 - grid->getWatV(k,i-1,j)) / dh;
+
+                        // Stress tensor components for bottom face
+                        double tau_xy = mi * (dudy + dvdx);
+                        double tau_yy = 2.0 * mi * dvdy - grid->GetP(k,i-1,j);
+                        double tau_zy = mi * (dvdz + dwdy);
+
+                        // Force contribution (normal: 0,-1,0)
+                        Fd += -tau_xy * dA;
+                        Fl += -tau_yy * dA;
+                        Fs += -tau_zy * dA;
+                    }
+
+                    // ===== FRONT FACE (Z+) - normal vector (0,0,1) =====
+                    if(grid->GetSolid(k+1,i,j) == FLUID_CELL) {
+                        dwdz = (grid->GetW(k+2,i,j) - 0) / dh;
+                        dwdx = (grid->getWatU(k+1,i,j+1) - grid->getWatU(k+1,i,j)) / dh;
+                        dwdy = (grid->getWatV(k+1,i+1,j) - grid->getWatV(k+1,i,j)) / dh;
+                        dudz = (grid->getUatW(k+2,i,j) - 0) / dh;
+                        dvdz = (grid->getVatW(k+2,i,j) - 0) / dh;
+
+                        // Stress tensor components for front face
+                        double tau_xz = mi * (dudz + dwdx);
+                        double tau_yz = mi * (dvdz + dwdy);
+                        double tau_zz = 2.0 * mi * dwdz - grid->GetP(k+1,i,j);
+
+                        // Force contribution (normal: 0,0,1)
+                        Fd += tau_xz * dA;
+                        Fl += tau_yz * dA;
+                        Fs += tau_zz * dA;
+                    }
+
+                    // ===== BACK FACE (Z-) - normal vector (0,0,-1) =====
+                    if(grid->GetSolid(k-1,i,j) == FLUID_CELL) {
+                        dwdz = (0 - grid->GetW(k-1,i,j)) / dh;
+                        dwdx = (grid->getWatU(k-1,i,j+1) - grid->getWatU(k-1,i,j)) / dh;
+                        dwdy = (grid->getWatV(k-1,i+1,j) - grid->getWatV(k-1,i,j)) / dh;
+                        dudz = (0 - grid->getUatW(k-1,i,j)) / dh;
+                        dvdz = (0 - grid->getVatW(k-1,i,j)) / dh;
+
+                        // Stress tensor components for back face
+                        double tau_xz = mi * (dudz + dwdx);
+                        double tau_yz = mi * (dvdz + dwdy);
+                        double tau_zz = 2.0 * mi * dwdz - grid->GetP(k-1,i,j);
+
+                        // Force contribution (normal: 0,0,-1)
+                        Fd += -tau_xz * dA;
+                        Fl += -tau_yz * dA;
+                        Fs += -tau_zz * dA;
+                    }
+                }
+            }
+        }
+
+
+
+        double coeff = 2.0 / (pow(SIMULATION.MEAN_VELOCITY,2)* SIMULATION.CHARACTERISTIC_LENGTH);
+        
+        double Cd = coeff * Fd;
+        double Cl = coeff * Fl;
+        double Cs = coeff * Fs; // Side force coefficient
+        
+        // Store in telemetry
+        AERODYNAMICS.Cl.push_back(Cl);
+        AERODYNAMICS.Cd.push_back(Cd);
+        AERODYNAMICS.pressure_drop.push_back(pdif);
+        AERODYNAMICS.LtoDRatio.push_back(Cl/Cd);
+        
+
+    }
+}
+
+
+
+
+
+
+// Add this function to initialize the CSV file with headers
+void InitializeTelemetryExport() {
+    if (EXPORT_SETTINGS.fileInitialized) return;
+    
+    std::string levelStr;
+    std::string exportBasePath = "Exports";
+    std::string exportPath;
+    
+    if (DIMENSION == 3) {
+        levelStr = LevelConfigurationToString(SIMULATION.level);
+        exportPath = exportBasePath + "/" + levelStr + "/" +
+            std::to_string(SIMULATION.GRID_SIZE) + "_3D" + "_re" +
+            std::to_string(int(SIMULATION.RE)) + "/";
+    } else {
+        levelStr = LevelConfigurationToString(SIMULATION2D.level);
+        exportPath = exportBasePath + "/" + levelStr + "/" +
+            std::to_string(SIMULATION2D.GRID_SIZE) + "_2D" + "_re" +
+            std::to_string(int(SIMULATION2D.RE)) + "/";
+    }
+    
+    std::filesystem::create_directories(exportPath);
+    
+    std::string filename = exportPath + "telemetry.csv";
+    EXPORT_SETTINGS.telemetryFile.open(filename);
+    
+    if (!EXPORT_SETTINGS.telemetryFile.is_open()) {
+        std::cerr << "Failed to open telemetry export file: " << filename << std::endl;
+        return;
+    }
+    
+    // Write CSV header
+    EXPORT_SETTINGS.telemetryFile << "iteration";
+    
+    if (EXPORT_SETTINGS.exportTime) 
+        EXPORT_SETTINGS.telemetryFile << ",time";
+    if (EXPORT_SETTINGS.exportDivSum) 
+        EXPORT_SETTINGS.telemetryFile << ",div_sum";
+    if (EXPORT_SETTINGS.exportDivSumBeforeProj) 
+        EXPORT_SETTINGS.telemetryFile << ",div_sum_before_proj";
+    if (EXPORT_SETTINGS.exportCFL) 
+        EXPORT_SETTINGS.telemetryFile << ",cfl";
+    if (EXPORT_SETTINGS.exportResidual) 
+        EXPORT_SETTINGS.telemetryFile << ",residual";
+    if (EXPORT_SETTINGS.exportCPUTime) 
+        EXPORT_SETTINGS.telemetryFile << ",cpu_time";
+    if (EXPORT_SETTINGS.exportGPUTime) 
+        EXPORT_SETTINGS.telemetryFile << ",gpu_time";
+    
+    // Aerodynamics headers (only for 2D with obstacle)
+    if (DIMENSION == 2 && SIMULATION2D.level == LevelConfiguration::OBSTACLE) {
+        if (EXPORT_SETTINGS.exportCl) 
+            EXPORT_SETTINGS.telemetryFile << ",cl";
+        if (EXPORT_SETTINGS.exportCd) 
+            EXPORT_SETTINGS.telemetryFile << ",cd";
+        if (EXPORT_SETTINGS.exportPressureDrop) 
+            EXPORT_SETTINGS.telemetryFile << ",pressure_drop";
+        if (EXPORT_SETTINGS.exportLtoDRatio) 
+            EXPORT_SETTINGS.telemetryFile << ",ld_ratio";
+    }
+    
+    EXPORT_SETTINGS.telemetryFile << "\n";
+    EXPORT_SETTINGS.fileInitialized = true;
+}
+
+// Add this function to export telemetry data
+void ExportTelemetryData(int iteration) {
+    if (!EXPORT_SETTINGS.enabled || !EXPORT_SETTINGS.fileInitialized) return;
+    
+    EXPORT_SETTINGS.telemetryFile << iteration;
+    
+    // Export simulation telemetry
+    if (EXPORT_SETTINGS.exportTime) {
+        if (!TELEMETRY.time.empty())
+            EXPORT_SETTINGS.telemetryFile << "," << TELEMETRY.time.back();
+        else
+            EXPORT_SETTINGS.telemetryFile << ",0.0";
+    }
+    
+    if (EXPORT_SETTINGS.exportDivSum) {
+        if (!TELEMETRY.div_sum.empty())
+            EXPORT_SETTINGS.telemetryFile << "," << TELEMETRY.div_sum.back();
+        else
+            EXPORT_SETTINGS.telemetryFile << ",0.0";
+    }
+    
+    if (EXPORT_SETTINGS.exportDivSumBeforeProj) {
+        if (!TELEMETRY.div_sum_before_proj.empty())
+            EXPORT_SETTINGS.telemetryFile << "," << TELEMETRY.div_sum_before_proj.back();
+        else
+            EXPORT_SETTINGS.telemetryFile << ",0.0";
+    }
+    
+    if (EXPORT_SETTINGS.exportCFL) {
+        if (!TELEMETRY.cfl.empty())
+            EXPORT_SETTINGS.telemetryFile << "," << TELEMETRY.cfl.back();
+        else
+            EXPORT_SETTINGS.telemetryFile << ",0.0";
+    }
+    
+    if (EXPORT_SETTINGS.exportResidual) {
+        if (!TELEMETRY.residual.empty())
+            EXPORT_SETTINGS.telemetryFile << "," << TELEMETRY.residual.back();
+        else
+            EXPORT_SETTINGS.telemetryFile << ",0.0";
+    }
+    
+    if (EXPORT_SETTINGS.exportCPUTime) {
+        if (!TELEMETRY.cpu_time.empty())
+            EXPORT_SETTINGS.telemetryFile << "," << TELEMETRY.cpu_time.back();
+        else
+            EXPORT_SETTINGS.telemetryFile << ",0.0";
+    }
+    
+    if (EXPORT_SETTINGS.exportGPUTime) {
+        if (!TELEMETRY.gpu_time.empty())
+            EXPORT_SETTINGS.telemetryFile << "," << TELEMETRY.gpu_time.back();
+        else
+            EXPORT_SETTINGS.telemetryFile << ",0.0";
+    }
+    
+    // Export aerodynamics telemetry (only for 2D with obstacle)
+    if ( SIMULATION.level == LevelConfiguration::OBSTACLE || SIMULATION2D.level == LevelConfiguration::OBSTACLE) {
+        if (EXPORT_SETTINGS.exportCl) {
+            if (!AERODYNAMICS.Cl.empty())
+                EXPORT_SETTINGS.telemetryFile << "," << AERODYNAMICS.Cl.back();
+            else
+                EXPORT_SETTINGS.telemetryFile << ",0.0";
+        }
+        
+        if (EXPORT_SETTINGS.exportCd) {
+            if (!AERODYNAMICS.Cd.empty())
+                EXPORT_SETTINGS.telemetryFile << "," << AERODYNAMICS.Cd.back();
+            else
+                EXPORT_SETTINGS.telemetryFile << ",0.0";
+        }
+        
+        if (EXPORT_SETTINGS.exportPressureDrop) {
+            if (!AERODYNAMICS.pressure_drop.empty())
+                EXPORT_SETTINGS.telemetryFile << "," << AERODYNAMICS.pressure_drop.back();
+            else
+                EXPORT_SETTINGS.telemetryFile << ",0.0";
+        }
+        
+        if (EXPORT_SETTINGS.exportLtoDRatio) {
+            if (!AERODYNAMICS.LtoDRatio.empty())
+                EXPORT_SETTINGS.telemetryFile << "," << AERODYNAMICS.LtoDRatio.back();
+            else
+                EXPORT_SETTINGS.telemetryFile << ",0.0";
+        }
+    }
+    
+    EXPORT_SETTINGS.telemetryFile << "\n";
+    EXPORT_SETTINGS.telemetryFile.flush(); // Ensure data is written
+}
+
+// Add this new UI function (call it from your main loop)
+void RenderExportUI() {
+    ImGui::Begin("Export Settings");
+    
+    bool wasEnabled = EXPORT_SETTINGS.enabled;
+    ImGui::Checkbox("Enable Export", &EXPORT_SETTINGS.enabled);
+    
+    // Auto-initialize file when export is enabled
+    if (EXPORT_SETTINGS.enabled && !wasEnabled && !EXPORT_SETTINGS.fileInitialized) {
+        InitializeTelemetryExport();
+    }
+    
+    if (EXPORT_SETTINGS.enabled) {
+        ImGui::Separator();
+        ImGui::Text("Export Intervals");
+        ImGui::SliderInt("Telemetry (Every N Frames)", &EXPORT_SETTINGS.telemetryInterval, 1, 100);
+        ImGui::SliderInt("Grid (Every N Frames)", &EXPORT_SETTINGS.gridInterval, 1, 500);
+        
+        ImGui::Separator();
+        ImGui::Text("Grid Export");
+        ImGui::Checkbox("Export Grid (VTK)", &EXPORT_SETTINGS.exportGridData);
+        
+        ImGui::Separator();
+        ImGui::Text("Simulation Telemetry");
+        ImGui::Checkbox("Time", &EXPORT_SETTINGS.exportTime);
+        ImGui::Checkbox("Divergence Sum", &EXPORT_SETTINGS.exportDivSum);
+        ImGui::Checkbox("Divergence Before Projection", &EXPORT_SETTINGS.exportDivSumBeforeProj);
+        ImGui::Checkbox("CFL Number", &EXPORT_SETTINGS.exportCFL);
+        ImGui::Checkbox("Residual", &EXPORT_SETTINGS.exportResidual);
+        ImGui::Checkbox("CPU Time (ADI)", &EXPORT_SETTINGS.exportCPUTime);
+        ImGui::Checkbox("GPU Time (Pressure)", &EXPORT_SETTINGS.exportGPUTime);
+        
+        // Show aerodynamics options only for 2D with obstacle
+        if ( SIMULATION.level == LevelConfiguration::OBSTACLE || SIMULATION2D.level == LevelConfiguration::OBSTACLE )  {
+            ImGui::Separator();
+            ImGui::Text("Aerodynamics Telemetry");
+            ImGui::Checkbox("Lift Coefficient (Cl)", &EXPORT_SETTINGS.exportCl);
+            ImGui::Checkbox("Drag Coefficient (Cd)", &EXPORT_SETTINGS.exportCd);
+            ImGui::Checkbox("Pressure Drop", &EXPORT_SETTINGS.exportPressureDrop);
+            ImGui::Checkbox("L/D Ratio", &EXPORT_SETTINGS.exportLtoDRatio);
+        }
+        
+        ImGui::Separator();
+        ImGui::TextWrapped("Last Telemetry Export: Frame %d", EXPORT_SETTINGS.lastExportedTelemetryFrame);
+        ImGui::TextWrapped("Last Grid Export: Frame %d (File #%d)", 
+                          EXPORT_SETTINGS.lastExportedGridFrame,
+                          EXPORT_SETTINGS.gridExportCounter - 1);
+    }
+    
+    ImGui::End();
+}
+
+// Modify the SimulationStep function to include export logic
+// Add this at the end of SimulationStep(), right after IT++:
+void HandleExports(int IT, int frame) {
+    if (!EXPORT_SETTINGS.enabled) return;
+    
+    // Initialize file on first export (auto-initialize)
+    if (!EXPORT_SETTINGS.fileInitialized) {
+        InitializeTelemetryExport();
+    }
+    
+    // Export telemetry at telemetry interval
+    if ((IT - 1) % EXPORT_SETTINGS.telemetryInterval == 0) {
+        ExportTelemetryData(IT);
+        EXPORT_SETTINGS.lastExportedTelemetryFrame = IT;
+    }
+    
+    // Export grid at grid interval (if enabled)
+    if (EXPORT_SETTINGS.exportGridData && (IT - 1) % EXPORT_SETTINGS.gridInterval == 0) {
+        if (DIMENSION == 3) {
+            SIMULATION.GRID_SOL->ExportGrid(EXPORT_SETTINGS.gridExportCounter);
+        } else if (DIMENSION == 2) {
+            SIMULATION2D.GRID_SOL->ExportGrid(EXPORT_SETTINGS.gridExportCounter);
+        }
+        EXPORT_SETTINGS.lastExportedGridFrame = IT;
+        EXPORT_SETTINGS.gridExportCounter++;
+    }
 }

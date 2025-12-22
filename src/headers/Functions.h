@@ -68,62 +68,6 @@ inline double  BACKWARDS_FACING_STEP_PRESSURE(double x, double y,double z,double
 }
 
 
-/*//////////////////////////////////////////////
-///////////////Obstacle flow////////////////////
-*///////////////////////////////////////////////
-
-inline Vec3 OBSTACLE_FLOW(double x, double y,double z,double t){
-    Vec3 r;
-    r.u = 0.0;
-    r.v = 0.0;
-    r.w = 0.0;
-    if(x <= SIMULATION.dh  && (z<1-SIMULATION.dh/2.0) && z>SIMULATION.dh/2.0 && y < (1.0 - SIMULATION.dh/2.0) && y > SIMULATION.dh/2){
-        r.u = (1.0 - pow(2.0*y - 1.0, 2)) * (1.0 - pow(2.0*z - 1.0, 2));//-4.0*(pow(y-0.5,2) + pow(z-0.5,2)) + 1.0;
-        //r.u = 1.0;
-    }
-    if(r.u <0){
-        r.u = 0.0;
-    }
-
-
-    return r;
-
-}
-
-inline double  OBSTACLE_FLOW_PRESSURE(double x, double y,double z,double t){
-
-    return 0.0;
-
-}
-
-inline int OBSTACLE_SOLID_MASK(int  i,int j,int k){
-     // First check for empty cell condition
-     if(j == SIMULATION.Nx-1 && i != 0 && i != SIMULATION.Ny-1 && k != 0 && k != SIMULATION.Nz-1) {
-        return EMPTY_CELL;
-    }
-    // Then check for inflow condition
-    if(j == 0 && i >= 1 && i < SIMULATION.Ny-1 && k != 0 && k != SIMULATION.Nz-1) {
-        return INFLOW_CELL;
-    }
-    // Finally check for solid boundaries
-    if(i == 0 || j == 0 || k == 0 || i == SIMULATION.Ny-1 || j == SIMULATION.Nx-1 || k == SIMULATION.Nz-1) {
-        return SOLID_CELL;
-    }
-    double dh = SIMULATION.dh;
-    double radius = 0.05;
-   
-
-    if(pow((j*dh - 0.2),2) +pow((i*dh - 0.2),2)+ pow((k*dh - 0.2),2)  < radius*radius){
-        return SOLID_CELL;
-    }
-
-    return FLUID_CELL;
-
-
-
-}
-
-
 
 /*//////////////////////////////////////////////
 ///////////Identity Functions ///////////////
@@ -265,7 +209,66 @@ inline int BACKWARDS_FACING_STEP_SOLID_MASK_2D(int i, int j) {
 }
 
 /*//////////////////////////////////////////////
-///////////OBSTACLE Facing Step 2D ///////////////
+///////////OBSTACLE  3D ///////////////
+*///////////////////////////////////////////////
+inline Vec3 OBSTACLE_FLOW(double x, double y,double z,double t){
+    Vec3 r;
+    r.u = 0.0;
+    r.v = 0.0;
+    r.w = 0.0;
+    double U0 = 2.25;
+
+    if(x <= SIMULATION.dh  && y < (6.0 - SIMULATION.dh/2.0) && y > SIMULATION.dh/2 && z < (6.0 - SIMULATION.dh/2.0) && z > SIMULATION.dh/2){
+        r.u = 16.0*U0*y*z*(0.41 - y) *(0.41-z)/pow(0.41,4);
+
+    }
+    if(r.u <0){
+        r.u = 0.0;
+    }
+
+
+
+
+    return r;
+
+}
+
+inline double  OBSTACLE_FLOW_PRESSURE(double x, double y,double z,double t){
+
+    return 0.0;
+
+}
+
+inline int OBSTACLE_SOLID_MASK(int i, int j, int k) {
+    double dh = SIMULATION.dh;
+    double x = j * dh;
+    double y = i * dh;
+    
+    // Check for inflow condition FIRST (most specific)
+    if(j == 0 && i >= 1 && i < SIMULATION.Ny-1 && k != 0 && k != SIMULATION.Nz-1) {
+        return INFLOW_CELL;
+    }
+    
+    // Check for outflow/empty condition
+    if(j == SIMULATION.Nx-1 && i != 0 && i != SIMULATION.Ny-1 && k != 0 && k != SIMULATION.Nz-1) {
+        return EMPTY_CELL;
+    }
+    
+    // Check for solid boundaries
+    if(i == 0 || j == 0 || k == 0 || i == SIMULATION.Ny-1 || j == SIMULATION.Nx-1 || k == SIMULATION.Nz-1) {
+        return SOLID_CELL;
+    }
+    
+    if(x >= 0.45 && x <= 0.55 && y >= 0.15 && y <= 0.25) {
+        return SOLID_CELL;
+    }
+    
+    return FLUID_CELL;
+}
+
+
+/*//////////////////////////////////////////////
+///////////OBSTACLE  2D ///////////////
 *///////////////////////////////////////////////
 
 inline Vec2 OBSTACLE_FLOW_2D(double x, double y,double t){
@@ -273,10 +276,7 @@ inline Vec2 OBSTACLE_FLOW_2D(double x, double y,double t){
     r.u = 0.0;
     r.v = 0.0;
 
-    //if(x <= SIMULATION.dh  && y < (1.0 - SIMULATION.dh/2.0) && y > SIMULATION.dh/2){
-    //    //r.u = (1.0 - pow(2.0*y - 1.0, 2));//-4.0*(pow(y-0.5,2) + pow(z-0.5,2)) + 1.0;
-    //    //r.u = 1.0;
-    //}
+
     double U0 = 1.5;
 
     if(x <= SIMULATION2D.dh  && y < (6.0 - SIMULATION2D.dh/2.0) && y > SIMULATION2D.dh/2){
@@ -313,61 +313,12 @@ inline int OBSTACLE_SOLID_MASK_2D(int  i,int j){
     }
     double dh = SIMULATION2D.dh;
     double radius = 0.05;
-    //finally, check foor the obstacle, which is a r=0.25 sphere centered at 0.5,0.5,0.5
-    ////square unity 1
-    //double x = j * dh;
-    //double y = i * dh;
-    //if(x >= 0.5 && x < 1.5 && y >= 0.5+2 && y <=  1.5+2){
-    //    return SOLID_CELL;
-    //}
-
-
-    //double k = 0.25;
-    //double x = j * dh;
-    //double y = i * dh;
-    //double a = k*(x -0.5) * pow((1-(x-0.5)), 2);
-    //double b = 0.15 * (sqrt((x - 0.5))) * sqrt((2 - (x - 0.5))) * (1-(x-0.5));
-//
-    //if(x > 0.5 && x < 1.5 && y >= 0.5 && y <= a + b + 0.5){
-    //    return SOLID_CELL;
-    //};
-    //if(x > 0.5 && x < 1.5 && y <= 0.5 && y >= a - b + 0.5){
-    //    return SOLID_CELL;
-    //};
 
     if(pow((j*dh - 0.2),2) +pow((i*dh - 0.2),2)  < radius*radius){
         return SOLID_CELL;
     }
 
 
-
-    //cilinder
-    //if(pow((j*dh - 1.0),2) +pow((i*dh - 0.5),2) < radius*radius && (k*dh)>=0.25 && (k*dh)<=0.75){
-    //    return SOLID_CELL;
-    //}
-    //elipse
-    // Rotated ellipse with 3:1 ratio (x:z) rotated by 10 degrees
-    //float center_x = 2.0;
-    //float center_z = 0.5;
-    //float angle = 0 * M_PI / 180.0; // Convert degrees to radians
-    //float cos_angle = cos(angle);
-    //float sin_angle = sin(angle);
-//
-    //// Translate coordinates to origin, rotate, then translate back
-    //float x = j*dh - center_x;
-    //float z = i*dh - center_z;
-    //float x_rot = x * cos_angle - z * sin_angle;
-    //float z_rot = x * sin_angle + z * cos_angle;
-//
-    //// Check ellipse equation (3:1 ratio) and y bounds
-    //if(pow(x_rot/radius, 2) + pow(z_rot/(radius), 2) < 1.0 && 
-    //   (k*dh)>=0.25 && (k*dh)<=0.75){
-    //    return SOLID_CELL;
-    //}
-    //if(pow((j*dh - 0.5),2) +pow((i*dh - 0.5),2)+ pow((k*dh - 0.5),2)  < (dh*1.0)*(dh*1.0)){
-    //    return SOLID_CELL;
-    //}
-    // Default to fluid cell
     return FLUID_CELL;
 
 

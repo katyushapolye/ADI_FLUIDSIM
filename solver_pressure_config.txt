@@ -1,14 +1,14 @@
 config_version=2
 solver=FGMRES
 gmres_n_restart=80
-max_iters=1000
+max_iters=2500
 norm=L2
 convergence=RELATIVE_INI_CORE
 monitor_residual=1
 tolerance=1e-9
 preconditioner(amg_solver)=AMG
 amg_solver:algorithm=CLASSICAL
-amg_solver:max_iters=3
+amg_solver:max_iters=2
 amg_solver:presweeps=1
 amg_solver:postsweeps=1
 amg_solver:cycle=V

@@ -481,6 +481,7 @@ void MAC::SetNeumannBorderPressure()
 double MAC::GetDivergencyAt(int i, int j, int k)
 {
     if(this->GetSolid(i,j,k) != FLUID_CELL) return 0;
+    
     double divU = (this->GetU(i, j + 1, k) - this->GetU(i, j, k)) / this->dh;
     double divV = (this->GetV(i + 1, j, k) - this->GetV(i, j, k)) / this->dh;
     double divW = (this->GetW(i, j, k + 1) - this->GetW(i, j, k)) / this->dh;
@@ -617,7 +618,7 @@ void MAC::ExportGrid(int iteration)
     std::string levelStr = LevelConfigurationToString(SIMULATION.level);
     std::string exportBasePath = "Exports";
     std::string exportPath = exportBasePath + "/" + levelStr + "/" +
-        std::to_string(SIMULATION.GRID_SIZE) + "_re" +
+        std::to_string(SIMULATION.GRID_SIZE) + "_3D"+ "_re" +
         std::to_string(int(SIMULATION.RE)) + "/VTK/";
     
     // Create the directory structure if it doesn't exist
@@ -787,10 +788,18 @@ void MAC::ExportGridVTK(int iteration)
 {
     std::string levelStr = LevelConfigurationToString(SIMULATION.level);
     std::string exportBasePath = "Exports";
-    std::string exportPath = exportBasePath + "/" + levelStr + "/" +
-        std::to_string(SIMULATION.GRID_SIZE) + "_re" +
+    std::string exportPath = "";
+    if(DIMENSION == 2){
+    exportPath = exportBasePath + "/" + levelStr + "/" +
+        std::to_string(SIMULATION.GRID_SIZE) +"_2D"+ "_re" +
         std::to_string(int(SIMULATION.RE)) + "/VTK/";
     
+    }
+    else{
+            exportPath = exportBasePath + "/" + levelStr + "/" +
+        std::to_string(SIMULATION.GRID_SIZE) +"_3D"+ "_re" +
+        std::to_string(int(SIMULATION.RE)) + "/VTK/";
+    }
     // Create the directory structure if it doesn't exist
     std::filesystem::create_directories(exportPath);
     

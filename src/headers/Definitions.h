@@ -50,6 +50,8 @@ struct SIMULATION_CONFIG{
     MAC* GRID_ANT;
 
     std::string ExportPath;
+    double CHARACTERISTIC_LENGTH = 0.1;
+    double MEAN_VELOCITY = 1.0;
 
     double lastPressureMatAssemblyTime;
     double lastPressureSolveTime;
@@ -90,6 +92,8 @@ struct SIMULATION_CONFIG_2D{
     MAC2D* GRID_ANT;
 
     std::string ExportPath;
+    double CHARACTERISTIC_LENGTH = 0.1;
+    double MEAN_VELOCITY = 1.0;
 
     double lastPressureMatAssemblyTime;
     double lastPressureSolveTime;
@@ -149,6 +153,36 @@ struct AerodynamicInformation{
 };
 
 
+struct ExportSettings {
+    bool enabled = true;
+    int telemetryInterval = 1;  // Export telemetry every N frames
+    int gridInterval = 1;      // Export grid every N frames
+    int lastExportedTelemetryFrame = 0;
+    int lastExportedGridFrame = 0;
+    int gridExportCounter = 1;  // Counter for grid file naming
+    
+    // Telemetry export options
+    bool exportTime = true;
+    bool exportDivSum = true;
+    bool exportDivSumBeforeProj = true;
+    bool exportCFL = true;
+    bool exportResidual = true;
+    bool exportCPUTime = true;
+    bool exportGPUTime = true;
+    
+    // Aerodynamics export options
+    bool exportCl = true;
+    bool exportCd = true;
+    bool exportPressureDrop = true;
+    bool exportLtoDRatio = true;
+    
+    // Grid export
+    bool exportGridData = false;
+    
+    std::ofstream telemetryFile;
+    bool fileInitialized = false;
+};
+
 
 
 
@@ -159,6 +193,7 @@ inline SIMULATION_CONFIG_2D SIMULATION2D;
 
 inline SimulationTelemetry TELEMETRY;
 inline AerodynamicInformation AERODYNAMICS;
+inline ExportSettings EXPORT_SETTINGS;
 
 
 #endif

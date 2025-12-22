@@ -26,6 +26,8 @@ private:
     float minValue = 0.0f;
     float maxValue = 1.0f;
 
+    float dh = 0.0f;
+
     bool twoDimension = true;
     
     // Zoom and pan state
@@ -86,10 +88,13 @@ GridVisualizer::GridVisualizer(MAC* gridPtr) : grid3D(gridPtr), grid2D(nullptr) 
     if (grid3D) {
         sliceIndex = grid3D->Ny / 2; // Start at middle slice
     }
+    dh = grid3D->dh;
 }
 
 GridVisualizer::GridVisualizer(MAC2D* gridPtr) : grid3D(nullptr), grid2D(gridPtr) {
     sliceIndex = 0; // No slicing needed for 2D
+        dh = grid2D->dh;
+
 }
 
 GridVisualizer::~GridVisualizer() {}
@@ -461,7 +466,7 @@ void GridVisualizer::ExtractSliceData() {
                         for (int y = 0; y < grid3D->Ny; y++) {
                             for (int x = 0; x < grid3D->Nx; x++) {
                                 int idx = y * heatmapCols + x;
-                                heatmapData[idx] = grid3D->GetDivergencyAt(x, y, k);
+                                heatmapData[idx] = grid3D->GetDivergencyAt(y, x, k);
                             }
                         }
                     } else if (selectedComponent == 7) { // Magnitude
@@ -551,7 +556,7 @@ void GridVisualizer::ExtractSliceData() {
                         for (int z = 0; z < grid3D->Nz; z++) {
                             for (int x = 0; x < grid3D->Nx; x++) {
                                 int idx = z * heatmapCols + x;
-                                heatmapData[idx] = grid3D->GetDivergencyAt(x, y, z);
+                                heatmapData[idx] = grid3D->GetDivergencyAt(y, x, z);
                             }
                         }
                     } else if (selectedComponent == 7) { // Magnitude
@@ -641,7 +646,7 @@ void GridVisualizer::ExtractSliceData() {
                         for (int z = 0; z < grid3D->Nz; z++) {
                             for (int y = 0; y < grid3D->Ny; y++) {
                                 int idx = z * heatmapCols + y;
-                                heatmapData[idx] = grid3D->GetDivergencyAt(x, y, z);
+                                heatmapData[idx] = grid3D->GetDivergencyAt(y, x, z);
                             }
                         }
                     } else if (selectedComponent == 7) { // Magnitude
@@ -728,6 +733,10 @@ void GridVisualizer::Render() {
                                (slicePlane == 1) ? grid3D->Ny - 1 : grid3D->Nx - 1;
                 ImGui::SliderInt("Slice Index", &sliceIndex, 0, maxSlice);
                 
+                // Display physical position of slice
+                float slicePosition = sliceIndex * dh;
+                ImGui::Text("Slice Position: %.3f", slicePosition);
+                
                 ImGui::Separator();
             } else {
                 // Force XY plane for 2D
@@ -768,9 +777,7 @@ void GridVisualizer::Render() {
                     minValue = 0.0f;
                     maxValue = 3.0f;
                 }
-
-                    
-                 else {
+                else {
                     ImGui::Checkbox("Auto Scale", &autoScale);
                     if (!autoScale) {
                         ImGui::SliderFloat("Min Value", &minValue, -10.0f, 10.0f);
@@ -800,9 +807,16 @@ void GridVisualizer::Render() {
             // Display info
             ImGui::Separator();
             if (DIMENSION == 2) {
+                float physicalWidth = GetNx() * dh;
+                float physicalHeight = GetNy() * dh;
                 ImGui::Text("Grid: %dx%d (2D)", GetNx(), GetNy());
+                ImGui::Text("Physical Size: %.3f x %.3f", physicalWidth, physicalHeight);
             } else {
+                float physicalX = GetNx() * dh;
+                float physicalY = GetNy() * dh;
+                float physicalZ = GetNz() * dh;
                 ImGui::Text("Grid: %dx%dx%d (3D)", GetNx(), GetNy(), GetNz());
+                ImGui::Text("Physical Size: %.3f x %.3f x %.3f", physicalX, physicalY, physicalZ);
             }
             
             if (selectedComponent == 0) {
@@ -855,7 +869,11 @@ void GridVisualizer::Render() {
                 // Extract 3D quiver data
                 ExtractQuiver3DData();
                 
+                float physicalX = GetNx() * dh;
+                float physicalY = GetNy() * dh;
+                float physicalZ = GetNz() * dh;
                 ImGui::Text("Grid: %dx%dx%d", GetNx(), GetNy(), GetNz());
+                ImGui::Text("Physical Size: %.3f x %.3f x %.3f", physicalX, physicalY, physicalZ);
                 ImGui::Text("Vectors: %zu", quiver3DX.size());
                 ImGui::Text("Range: [%.6f, %.6f]", minValue, maxValue);
             }
@@ -891,26 +909,27 @@ void GridVisualizer::Render() {
             ImPlot::PushColormap(colormap);
         }
 
+        // Calculate physical dimensions
         float width = 1.0f, height = 1.0f;
         
         if (DIMENSION == 2) {
             // 2D mode: always XY plane
-            width  = (float)GetNx();
-            height = (float)GetNy();
+            width  = (float)GetNx() * dh;
+            height = (float)GetNy() * dh;
         } else {
             // 3D mode: depends on slice plane
             switch(slicePlane) {
                 case 0: // XY plane
-                    width  = (float)GetNx(); // X axis
-                    height = (float)GetNy(); // Y axis
+                    width  = (float)GetNx() * dh; // X axis
+                    height = (float)GetNy() * dh; // Y axis
                     break;
                 case 1: // XZ plane
-                    width  = (float)GetNx(); // X axis
-                    height = (float)GetNz(); // Z axis
+                    width  = (float)GetNx() * dh; // X axis
+                    height = (float)GetNz() * dh; // Z axis
                     break;
                 case 2: // YZ plane
-                    width  = (float)GetNy(); // Y axis
-                    height = (float)GetNz(); // Z axis
+                    width  = (float)GetNy() * dh; // Y axis
+                    height = (float)GetNz() * dh; // Z axis
                     break;
             }
         }
@@ -941,8 +960,9 @@ void GridVisualizer::Render() {
                     (DIMENSION == 2 || slicePlane == 0 || slicePlane == 1) ? "X" : "Y",
                     (DIMENSION == 2 || slicePlane == 0) ? "Y" : "Z"
                 );
-                ImPlot::SetupAxisLimits(ImAxis_X1, 0, width, ImGuiCond_Always);
-                ImPlot::SetupAxisLimits(ImAxis_Y1, 0, height, ImGuiCond_Always);
+
+                ImPlot::SetupAxisLimits(ImAxis_X1, 0, grid2D->Nx, ImGuiCond_Always);
+                ImPlot::SetupAxisLimits(ImAxis_Y1, 0, grid2D->Ny, ImGuiCond_Always);
             
                 ImPlot::SetNextQuiverStyle(baseSize, ImPlot::GetColormapColor(1));
                 ImPlot::PlotQuiver("Velocity", 
@@ -958,7 +978,7 @@ void GridVisualizer::Render() {
         // --- Heatmap Plot ---
         else if (selectedComponent > 0 && !heatmapData.empty()) {
             if (ImPlot::BeginPlot("##Heatmap", ImVec2(plotWidth, plotHeight))) {
-                ImPlot::SetupAxes(nullptr, nullptr, 0, ImPlotAxisFlags_Invert);
+                ImPlot::SetupAxes(nullptr, nullptr, 0);
                 ImPlot::SetupAxisLimits(ImAxis_X1, 0, width, ImGuiCond_Always);
                 ImPlot::SetupAxisLimits(ImAxis_Y1, 0, height, ImGuiCond_Always);
             
@@ -978,8 +998,6 @@ void GridVisualizer::Render() {
             ImGui::SameLine();
 
             ImPlot::ColormapScale("##HeatmapScale", minValue, maxValue, ImVec2(60, plotHeight));
-            
-
         }
 
         if (needsScrolling) {
@@ -993,17 +1011,21 @@ void GridVisualizer::Render() {
         // 3D Volume Visualization
         if (DIMENSION == 3 && !quiver3DX.empty()) {
             ImGui::Begin("3D Visualization", nullptr, ImGuiWindowFlags_NoScrollbar);
-
-
-            
             
             ImPlot::PushColormap(colormap3D);
             ImPlot3D::PushColormap(colormap3D);
             float plotSize = ImGui::GetTextLineHeight() * 63;
+            
+            // Calculate physical domain size
+            float physicalX = GetNx() ;
+            float physicalY = GetNy() ;
+            float physicalZ = GetNz() ;
+            
             if (ImPlot3D::BeginPlot("Quiver Plot 3D", ImVec2(plotSize, plotSize))) {
-                ImPlot3D::SetupAxisTicks(ImAxis3D_X, 0.0, (double)GetNx(), GetNx() + 1);
-                ImPlot3D::SetupAxisTicks(ImAxis3D_Y, 0.0, (double)GetNy(), GetNy() + 1);
-                ImPlot3D::SetupAxisTicks(ImAxis3D_Z, 0.0, (double)GetNz(), GetNz() + 1);
+                // Set up axis ticks based on physical dimensions
+                ImPlot3D::SetupAxisTicks(ImAxis3D_X, 0.0, (double)physicalX, GetNx() + 1);
+                ImPlot3D::SetupAxisTicks(ImAxis3D_Y, 0.0, (double)physicalY, GetNy() + 1);
+                ImPlot3D::SetupAxisTicks(ImAxis3D_Z, 0.0, (double)physicalZ, GetNz() + 1);
                 
                 ImPlot3D::SetNextQuiverStyle(baseSize, ImPlot3D::GetColormapColor(1)); 
                 ImPlot3D::SetupAxes("X", "Z", "Y");
@@ -1019,11 +1041,10 @@ void GridVisualizer::Render() {
             ImGui::SameLine();
             ImPlot::ColormapScale("##HeatmapScale", minValue, maxValue, ImVec2(100, plotSize));
             ImPlot::PopColormap();
-             ImPlot3D::PopColormap();
+            ImPlot3D::PopColormap();
 
             ImGui::End();
         }
     }
 }
-
 #endif // GRID_VISUALIZER_H

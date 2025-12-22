@@ -453,7 +453,7 @@ void MAC2D::ExportGrid(int iteration)
     std::string levelStr = LevelConfigurationToString(SIMULATION2D.level);
     std::string exportBasePath = "Exports";
     std::string exportPath = exportBasePath + "/" + levelStr + "/" +
-        std::to_string(SIMULATION2D.GRID_SIZE) + "_re" +
+        std::to_string(SIMULATION2D.GRID_SIZE) + "_2D" + "_re" +
         std::to_string(int(SIMULATION2D.RE)) + "/VTK/";
     
     // Create the directory structure if it doesn't exist
@@ -611,9 +611,13 @@ void MAC2D::ExportGridVTK(int iteration)
 {
     std::string levelStr = LevelConfigurationToString(SIMULATION2D.level);
     std::string exportBasePath = "Exports";
+
     std::string exportPath = exportBasePath + "/" + levelStr + "/" +
-        std::to_string(SIMULATION2D.GRID_SIZE) + "_re" +
-        std::to_string(int(SIMULATION2D.RE)) + "/VTK/";
+        std::to_string(SIMULATION.GRID_SIZE) +"_2D_"+ "re" +
+        std::to_string(int(SIMULATION.RE)) + "/VTK/";
+    
+    
+
     
     // Create the directory structure if it doesn't exist
     std::filesystem::create_directories(exportPath);
