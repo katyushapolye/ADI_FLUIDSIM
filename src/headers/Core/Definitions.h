@@ -12,14 +12,6 @@
 #define EMPTY_CELL  2
 #define INFLOW_CELL 3
 
-//#define RE 389.0
-
-//add function poointer to
-//solid funcion
-//etc
-
-
-
 
 
 struct SIMULATION_CONFIG{
@@ -117,7 +109,6 @@ struct AerodynamicInformation{
     std::vector<double> pressure_drop;
     std::vector<double> Cd;
     std::vector<double> Cl;
-
     std::vector<double> LtoDRatio;
 };
 
@@ -154,10 +145,12 @@ struct ExportSettings {
 
 
 
-
+//Performance parameters
 inline int DIMENSION = 3;
 inline bool GPU_ACCELERATION = 1;
-
+inline int THREAD_COUNT = 4;
+inline bool ADAPTATIVE_TIMESTEP = 0;
+inline double MAX_CFL = 1.0;
 
 inline SIMULATION_CONFIG SIMULATION;
 

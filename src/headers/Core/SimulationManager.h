@@ -35,6 +35,8 @@ private:
     static double uncorrectedDiv;
     static double correctedDiv;
     static double residual;
+    static double diffusionCFL;
+    static double advectionCFL;
 
     //function pointers that gets setup to different solvers
     static void (*momentumStep)(MAC* gridAnt, MAC* gridSol,double time);
@@ -67,18 +69,20 @@ bool            SimulationManager::stepOnce = false;
 bool            SimulationManager::isRunning = false;
 double          SimulationManager::uncorrectedDiv = 0.0;
 double          SimulationManager::correctedDiv = 0.0;
+double          SimulationManager::diffusionCFL = 0.0;
+double          SimulationManager::advectionCFL = 0.0;
 double          SimulationManager::residual = 0.0;
 
 void SimulationManager::UpdateTelemetry(){
-    double advcfl = (SIMULATION.GRID_SOL->GetMaxVelocity() / SIMULATION.dh) * SIMULATION.dt;
-    double diffcfl = (SIMULATION.EPS* SIMULATION.dt) / (SIMULATION.dh*SIMULATION.dh);
+    advectionCFL = (SIMULATION.GRID_SOL->GetMaxVelocity() / SIMULATION.dh) * SIMULATION.dt;
+    diffusionCFL = (SIMULATION.EPS* SIMULATION.dt) / (SIMULATION.dh*SIMULATION.dh);
 
         TELEMETRY.Push(
             currentTime ,
             correctedDiv,
             uncorrectedDiv,
-            advcfl,
-            diffcfl,
+            advectionCFL,
+            diffusionCFL,
             residual,
             SIMULATION.lastADISolveTime,
             SIMULATION.lastPressureSolveTime
@@ -561,6 +565,7 @@ void SimulationManager::ExportData() {
 
 void SimulationManager::InitializeSimulation(const std::string& configFile){
     ConfigReader::loadConfig(SIMULATION, configFile);
+    omp_set_num_threads(THREAD_COUNT);
     TELEMETRY.Push(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,0.0);
     
     std::cout << "MAC Grid initialized - Parameters\n"
@@ -685,7 +690,17 @@ void  SimulationManager::InitializeExportTelemetry() {
 
 void SimulationManager::StepSimulation(GridVisualizer* visualizer){
     visualizer->UpdateGrid(SIMULATION.GRID_SOL);
-    visualizer->Render(currentIT,finaIT,currentTime,finalTime,lastFrameTime,isRunning,stepOnce);
+    visualizer->Render(currentIT,currentTime,residual,lastFrameTime, isRunning,stepOnce);
+    if(ADAPTATIVE_TIMESTEP){
+        advectionCFL = (SIMULATION.GRID_ANT->GetMaxVelocity() / SIMULATION.dh) * SIMULATION.dt;
+        diffusionCFL = (SIMULATION.EPS * SIMULATION.dt) / (SIMULATION.dh * SIMULATION.dh);
+        double currentCFL = std::max(diffusionCFL, advectionCFL);
+        double dt_advection = (MAX_CFL * SIMULATION.dh) / SIMULATION.GRID_ANT->GetMaxVelocity();
+        double dt_diffusion = (MAX_CFL * SIMULATION.dh * SIMULATION.dh) / SIMULATION.EPS;
+        SIMULATION.dt = std::min(dt_advection, dt_diffusion);
+   
+    }
+
     if (isRunning || stepOnce){
         double start = GetWallTime();
 
@@ -721,6 +736,7 @@ void SimulationManager::StepSimulation(GridVisualizer* visualizer){
 
         stepOnce = false;
     }
+
 
 
 }

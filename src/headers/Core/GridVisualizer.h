@@ -74,7 +74,7 @@ private:
     int GetNz() const { return (DIMENSION == 2) ? 1 : grid3D->Nz; }
 
     void RenderTelemetryUI();
-    void RenderControlUI(int IT, int F_IT, double time, double tF, double frameTime, bool& simulationRunning, bool& stepOnce);
+    void RenderControlUI(int IT, double time, double residual, double frameTime, bool& simulationRunning, bool& stepOnce);
     void RenderExportUI();
     void RenderAerodynamicsUI();
 
@@ -82,7 +82,7 @@ public:
     GridVisualizer(MAC* gridPtr);
     ~GridVisualizer();
     
-    void Render(int IT, int F_IT, double time, double tF, double frameTime, bool& simulationRunning, bool& stepOnce);
+    void Render(int IT, double time, double residual, double frameTime, bool& simulationRunning, bool& stepOnce);
     void UpdateGrid(MAC* newGrid);
 
 
@@ -696,7 +696,7 @@ void GridVisualizer::ExtractSliceData() {
     }
 }
 
-void GridVisualizer::Render(int IT, int F_IT, double time, double tF, double frameTime, bool& simulationRunning, bool& stepOnce) {
+void GridVisualizer::Render(int IT,  double time, double residual, double frameTime, bool& simulationRunning, bool& stepOnce) {
     if ((DIMENSION == 2 && !grid2D) || (DIMENSION == 3 && !grid3D)) return;
     
     ImGui::Begin("Grid Visualizer", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
@@ -1066,24 +1066,22 @@ if (DIMENSION == 3 && !quiver3DX.empty()) {
 }
 
 
-    this->RenderControlUI(IT,F_IT,time,tF,frameTime,simulationRunning,stepOnce);
+    this->RenderControlUI(IT,time,residual,frameTime,simulationRunning,stepOnce);
     this->RenderTelemetryUI();
     this->RenderAerodynamicsUI();
     this->RenderExportUI();
 }
 
-void GridVisualizer::RenderControlUI(int IT, int F_IT, double time, double tF, double frameTime, bool& simulationRunning, bool& stepOnce) {
+void GridVisualizer::RenderControlUI(int IT,  double time, double residual, double frameTime, bool& simulationRunning, bool& stepOnce) {
     ImGui::Begin("Simulation Control");
     
-    ImGui::Text("Iteration: %d / %d", IT, F_IT);
-    ImGui::Text("Time: %.4f / %.4f", time, tF);
+    ImGui::Text("Iteration: %d" , IT);
+    ImGui::Text("Time: %.4f", time);
+    ImGui::Text("Residual: %.8f", residual);
+    ImGui::Text("Timestep: %.8f", SIMULATION.dt);
+    ImGui::Text("Divergence: %.6e", SIMULATION.GRID_SOL->GetDivSum());
+
     
-    // Display divergence based on dimension
-    if(DIMENSION == 3) {
-        ImGui::Text("Divergence: %.6e", SIMULATION.GRID_SOL->GetDivSum());
-    } else if(DIMENSION == 2) {
-        ImGui::Text("Divergence: %.6e", SIMULATION.GRID_SOL->GetDivSum());
-    }
     
     ImGui::Text("Frame Time: %.8f ms", frameTime * 1000.0);
     
@@ -1111,8 +1109,8 @@ void GridVisualizer::RenderTelemetryUI()
 
     ImGui::Begin("Simulation Telemetry");
     
-            const double t = TELEMETRY.time.back();
-        const double window = 5.0;
+    const double t = TELEMETRY.time.back();
+    const double window = 5.0;
     float avail = ImGui::GetContentRegionAvail().x;
     float plot_w = avail * 0.5f - ImGui::GetStyle().ItemSpacing.x * 0.5f;
     ImVec2 plot_size(plot_w, 300);
@@ -1142,12 +1140,14 @@ void GridVisualizer::RenderTelemetryUI()
         ImPlot::SetupAxes("Time", "CFL",
                           ImPlotAxisFlags_None,
                           ImPlotAxisFlags_AutoFit);
-                ImPlot::SetupAxisLimits(
+        ImPlot::SetupAxisLimits(
             ImAxis_X1,
             t-window*0.5,
             t+window*0.5,
             ImGuiCond_Always
         );
+
+
 
         ImPlot::PlotLine("Adv. CFL",
             TELEMETRY.time.data(), TELEMETRY.advcfl.data(), TELEMETRY.time.size());
@@ -1233,7 +1233,7 @@ void GridVisualizer::RenderAerodynamicsUI() {
         if (!AERODYNAMICS.Cl.empty()) {
             ImPlot::PushStyleColor(ImPlotCol_Line,ImVec4(0.0,0.0,1.0,1.0f));
 
-                    ImPlot::SetupAxisLimits(
+        ImPlot::SetupAxisLimits(
             ImAxis_X1,
             t-window*0.5,
             t+window*0.5,
@@ -1268,6 +1268,7 @@ void GridVisualizer::RenderAerodynamicsUI() {
             t+window*0.5,
             ImGuiCond_Always
             );
+
             ImPlot::PlotLine("Cd",
                            AERODYNAMICS.time.data(), 
                            AERODYNAMICS.Cd.data(), 
@@ -1343,7 +1344,6 @@ void GridVisualizer::RenderAerodynamicsUI() {
     ImGui::Separator();
     ImGui::Text("Current Aerodynamic Data:");
     ImGui::Spacing();
-    
     if (ImGui::BeginTable("AeroStatsTable", 4, 
                          ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
         ImGui::TableSetupColumn("Parameter");

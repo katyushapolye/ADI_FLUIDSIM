@@ -95,6 +95,11 @@ namespace ConfigReader {
         }
         DIMENSION = getInt("DIMENSION", 3);
         GPU_ACCELERATION = getInt("GPU_ACCELERATION",0);
+        THREAD_COUNT = getInt("THREAD_COUNT",4);
+
+
+        ADAPTATIVE_TIMESTEP = getInt("ADAPTATIVE_TIMESTEP",0);
+        MAX_CFL =  getDouble("MAX_CFL",1.0);
 
         SIMULATION.GRID_SOL = new MAC();
             SIMULATION.GRID_ANT = new MAC();

@@ -37,7 +37,7 @@
 
 int main(int argc, char *argv[])
 {
-    omp_set_num_threads(8);
+
 
     SimulationManager::InitializeSimulation();
     SimulationManager::InitializeExportTelemetry();
@@ -85,12 +85,11 @@ int main(int argc, char *argv[])
     ImPlot::CreateContext();
     ImPlot3D::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
-    
-    // Setup Platform/Renderer backends
+
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
     
-    // Setup style
+
     ImGui::StyleColorsDark();
     
 
@@ -98,13 +97,6 @@ int main(int argc, char *argv[])
     visualizer = new GridVisualizer(SIMULATION.GRID_SOL);
 
 
-    
-    
-
-
-
-    
-    // Main loop
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();

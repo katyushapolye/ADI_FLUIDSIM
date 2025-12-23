@@ -371,6 +371,7 @@ void PressureSolver::InitializePressureSolver(MAC *grid,double dt)
 }
 
 void PressureSolver::SolvePressure_EIGEN(MAC* grid){
+    PressureSolver::dt = SIMULATION.dt;
     CPUTimer timer;
     timer.start();
      double dh = grid->dh;
@@ -452,6 +453,7 @@ void PressureSolver::SolvePressure_EIGEN(MAC* grid){
 
 void PressureSolver::SolvePressure_AMGX(MAC* grid){
 CPUTimer timer;
+    PressureSolver::dt = SIMULATION.dt;
     timer.start();
     double dh = grid->dh;
     int MatSize = grid->GetFluidCellCount();
@@ -590,7 +592,7 @@ CPUTimer timer;
 
 
 void PressureSolver::ProjectPressure(MAC* grid){
-    
+    PressureSolver::dt = SIMULATION.dt;
     for (int i = 1; i < Ny-1 ; i++)
     {                  
         for (int j = 1; j < Nx +1-1; j++)

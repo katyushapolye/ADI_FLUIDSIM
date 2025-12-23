@@ -375,6 +375,7 @@ void PressureSolver2D::SolvePressure_AMGX(MAC* grid)
 
 void PressureSolver2D::ProjectPressure(MAC* grid)
 {
+    PressureSolver2D::dt = SIMULATION.dt;
     // Project U velocities
     for (int i = 1; i < Ny-1; i++)
     {                  
