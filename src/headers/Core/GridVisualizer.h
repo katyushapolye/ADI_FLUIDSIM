@@ -974,11 +974,30 @@ void GridVisualizer::Render(int IT,  double time, double residual, double frameT
                 // Set axis limits according to physical dimensions
                 ImPlot::SetupAxes(
                     (DIMENSION == 2 || slicePlane == 0 || slicePlane == 1) ? "X" : "Y",
-                    (DIMENSION == 2 || slicePlane == 0) ? "Y" : "Z"
+                    (DIMENSION == 2 || slicePlane == 0) ? "Y" : "Z",0,0
                 );
 
+            if (DIMENSION == 2) {
                 ImPlot::SetupAxisLimits(ImAxis_X1, 0, grid2D->Nx, ImGuiCond_Always);
                 ImPlot::SetupAxisLimits(ImAxis_Y1, 0, grid2D->Ny, ImGuiCond_Always);
+            } else {
+                // For 3D slices, use appropriate dimensions based on slice plane
+                switch(slicePlane) {
+                    case 0: // XY plane
+                        ImPlot::SetupAxisLimits(ImAxis_X1, 0, grid3D->Nx, ImGuiCond_Always);
+                        ImPlot::SetupAxisLimits(ImAxis_Y1, 0, grid3D->Ny, ImGuiCond_Always);
+                        break;
+                    case 1: // XZ plane
+                        ImPlot::SetupAxisLimits(ImAxis_X1, 0, grid3D->Nx, ImGuiCond_Always);
+                        ImPlot::SetupAxisLimits(ImAxis_Y1, 0, grid3D->Nz, ImGuiCond_Always);
+                        break;
+                    case 2: // YZ plane
+                        ImPlot::SetupAxisLimits(ImAxis_X1, 0, grid3D->Ny, ImGuiCond_Always);
+                        ImPlot::SetupAxisLimits(ImAxis_Y1, 0, grid3D->Nz, ImGuiCond_Always);
+                        break;
+                }
+            }
+                
             
                 ImPlot::SetNextQuiverStyle(baseSize, ImPlot::GetColormapColor(1));
                 ImPlot::PlotQuiver("Velocity", 
@@ -994,7 +1013,7 @@ void GridVisualizer::Render(int IT,  double time, double residual, double frameT
         // --- Heatmap Plot ---
         else if (selectedComponent > 0 && !heatmapData.empty()) {
             if (ImPlot::BeginPlot("##Heatmap", ImVec2(plotWidth, plotHeight))) {
-                ImPlot::SetupAxes(nullptr, nullptr, 0);
+                ImPlot::SetupAxes(nullptr, nullptr, 0,ImPlotAxisFlags_Invert);
                 ImPlot::SetupAxisLimits(ImAxis_X1, 0, width, ImGuiCond_Always);
                 ImPlot::SetupAxisLimits(ImAxis_Y1, 0, height, ImGuiCond_Always);
             

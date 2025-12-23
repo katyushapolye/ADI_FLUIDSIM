@@ -196,6 +196,11 @@ namespace ConfigReader {
                     SIMULATION.PressureBoundaryFunction2D = OBSTACLE_FLOW_PRESSURE_2D;
 
             }
+            else{
+                printf("FAILED LEVEL ASSERTION!\n");
+
+            }
+
 
             SIMULATION.GRID_SOL->SetLevelGeometry(SIMULATION.SolidMaskFunction2D);
             SIMULATION.GRID_ANT->SetLevelGeometry(SIMULATION.SolidMaskFunction2D);
