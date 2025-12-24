@@ -461,222 +461,184 @@ void PressureSolver2D::UpdatePressureMatrix_Eigen(MAC* grid){
 }
 
 
-void PressureSolver2D::UpdatePressureMatrix_AMGX(MAC* grid){
-
-    std::cout << "not working for now!" << std::endl;
-
-
-
-
+void PressureSolver2D::UpdatePressureMatrix_AMGX(MAC* grid) {
     PressureSolver2D::dt = dt;
     double dh = SIMULATION.dh;
-    //reset the indexing vector
+    
+    // 1. Reset indexing
     PressureSolver2D::IDP = VectorXd(Nx * Ny);
     PressureSolver2D::IDP.setConstant(-1);
     PRESSURE_MASK.clear();
-    NON_ZERO = 0;
+    
+    // We will recalculate NON_ZERO strictly in the second loop to ensure safety,
+    // but we need an estimate for allocation.
+    int estimated_nonzero = 0; 
 
-
-    int c = 0;
-    for (int i = 0; i < Ny; i++)
-    {
-        for (int j = 0; j < Nx; j++)
-        {
+    // --- LOOP 1: Build Masks and Map IDs ---
+    int fluid_cell_count = 0; // Recalculate this locally to ensure it matches the current geometry
+    
+    for (int i = 0; i < Ny; i++) {
+        for (int j = 0; j < Nx; j++) {
             Tensor<double, 2> mask = Tensor<double, 2>(3, 3);
             mask.setZero();
-            
-            // FIX 2: ADD BOUNDARY CHECK (like 3D version)
-            if (i == 0 || j == 0 || i == Ny-1 || j == Nx-1)
-            {
-                PressureSolver2D::PRESSURE_MASK.push_back(mask);
-                SetIDP(i, j, -1);
-                continue;
-            }
-            
-            // Now check for solid/empty/inflow
-            if (grid->GetSolid(i, j) == SOLID_CELL || 
-                grid->GetSolid(i, j) == EMPTY_CELL || 
-                grid->GetSolid(i, j) == INFLOW_CELL)
-            {
-                PressureSolver2D::PRESSURE_MASK.push_back(mask);
-                SetIDP(i, j, -1);
-                continue;
-            }
-            
-            // FLUID CELL - build stencil
-            NON_ZERO++; // diagonal entry
-            
-            // Check fluid neighbors (add off-diagonal entries)
-            if (grid->GetSolid(i + 1, j) == FLUID_CELL)
-            {
-                mask(2, 1) = 1.0;
-                mask(1, 1) -= 1.0;
-                NON_ZERO++;
-            }
-            if (grid->GetSolid(i - 1, j) == FLUID_CELL)
-            {
-                mask(0, 1) = 1.0;
-                mask(1, 1) -= 1.0;
-                NON_ZERO++;
-            }
-            if (grid->GetSolid(i, j + 1) == FLUID_CELL)
-            {
-                mask(1, 2) = 1.0;
-                mask(1, 1) -= 1.0;
-                NON_ZERO++;
-            }
-            if (grid->GetSolid(i, j - 1) == FLUID_CELL)
-            {
-                mask(1, 0) = 1.0;
-                mask(1, 1) -= 1.0;
-                NON_ZERO++;
-            }
-            
 
-            if (grid->GetSolid(i + 1, j) == EMPTY_CELL)
-            {
-                mask(1, 1) -= 1.0;
-                
+            // Boundary checks
+            if (i == 0 || j == 0 || i == Ny - 1 || j == Nx - 1) {
+                PressureSolver2D::PRESSURE_MASK.push_back(mask);
+                SetIDP(i, j, -1);
+                continue;
             }
-            if (grid->GetSolid(i - 1, j) == EMPTY_CELL)
-            {
-                mask(1, 1) -= 1.0;
+
+            // Solid/Empty/Inflow checks
+            if (grid->GetSolid(i, j) == SOLID_CELL ||
+                grid->GetSolid(i, j) == EMPTY_CELL ||
+                grid->GetSolid(i, j) == INFLOW_CELL) {
+                PressureSolver2D::PRESSURE_MASK.push_back(mask);
+                SetIDP(i, j, -1);
+                continue;
             }
-            if (grid->GetSolid(i, j + 1) == EMPTY_CELL)
-            {
-                mask(1, 1) -= 1.0;
+
+            // FLUID CELL
+            estimated_nonzero++; // Diagonal
+
+            // Neighbors
+            if (grid->GetSolid(i + 1, j) == FLUID_CELL) { mask(2, 1) = 1.0; mask(1, 1) -= 1.0; estimated_nonzero++; }
+            if (grid->GetSolid(i - 1, j) == FLUID_CELL) { mask(0, 1) = 1.0; mask(1, 1) -= 1.0; estimated_nonzero++; }
+            if (grid->GetSolid(i, j + 1) == FLUID_CELL) { mask(1, 2) = 1.0; mask(1, 1) -= 1.0; estimated_nonzero++; }
+            if (grid->GetSolid(i, j - 1) == FLUID_CELL) { mask(1, 0) = 1.0; mask(1, 1) -= 1.0; estimated_nonzero++; }
+
+            // Empty neighbors modify diagonal
+            if (grid->GetSolid(i + 1, j) == EMPTY_CELL) mask(1, 1) -= 1.0;
+            if (grid->GetSolid(i - 1, j) == EMPTY_CELL) mask(1, 1) -= 1.0;
+            if (grid->GetSolid(i, j + 1) == EMPTY_CELL) mask(1, 1) -= 1.0;
+            if (grid->GetSolid(i, j - 1) == EMPTY_CELL) mask(1, 1) -= 1.0;
+
+            // FIX: Ensure Diagonal is never pure 0.0 to prevent Singular Matrix
+            // If the cell is isolated, the math above leaves mask(1,1) as 0.0.
+            if (mask(1, 1) == 0.0) {
+                mask(1, 1) = 1.0; // Dummy value to keep solver happy (pressure here won't propagate anyway)
             }
-            if (grid->GetSolid(i, j - 1) == EMPTY_CELL)
-            {
-                mask(1, 1) -= 1.0;
-            }
-            
-            SetIDP(i, j, c);
-            c++;
+
+            SetIDP(i, j, fluid_cell_count);
+            fluid_cell_count++;
             PressureSolver2D::PRESSURE_MASK.push_back(mask);
         }
     }
 
+    // Allocate based on estimate
+    collums = (int*)malloc(sizeof(int) * estimated_nonzero);
+    rows = (int*)malloc(sizeof(int) * estimated_nonzero);
+    values = (double*)calloc(estimated_nonzero, sizeof(double));
 
-    collums = (int *)malloc(sizeof(int) * NON_ZERO);
-    rows = (int *)malloc(sizeof(int) * NON_ZERO);
-    values = (double *)calloc(NON_ZERO, sizeof(double));
-    int MatSize = grid->GetFluidCellCount();
-    c = 0;
-    for (int i = 1; i < Ny - 1; i++)
-    {
-        for (int j = 1; j < Nx - 1; j++)
-        {
+    // FIX: Use the calculated count, not the grid's potentially stale count
+    int MatSize = fluid_cell_count; 
+    
+    // --- LOOP 2: Fill COO Arrays ---
+    int actual_nonzero = 0; // We use a new counter to be safe
+
+    for (int i = 1; i < Ny - 1; i++) {
+        for (int j = 1; j < Nx - 1; j++) {
+            int MAT_LINE = GetIDP(i, j);
+            if (MAT_LINE == -1) continue;
+
             Tensor<double, 2> mask = GetPressureMask(i, j);
 
-            // Get row index once
-            int MAT_LINE = GetIDP(i, j);
-            
-            // If this cell is not a FLUID cell, skip entirely
-            if (MAT_LINE == -1)
-                continue;
-
-            // Diagonal (center)
-            if (mask(1, 1) != 0.0)
-            {
-                rows[c] = MAT_LINE;
-                collums[c] = MAT_LINE;
-                values[c] += mask(1, 1);
-                c++;
+            // Diagonal
+            if (mask(1, 1) != 0.0) {
+                rows[actual_nonzero] = MAT_LINE;
+                collums[actual_nonzero] = MAT_LINE;
+                values[actual_nonzero] += mask(1, 1);
+                actual_nonzero++;
             }
 
-            // +Y neighbor
-            if (mask(2, 1) != 0.0)
-            {
+            // Neighbors
+            // Check +Y
+            if (mask(2, 1) != 0.0) {
                 int MAT_COLLUM = GetIDP(i + 1, j);
-                if (MAT_COLLUM != -1)
-                {
-                    rows[c] = MAT_LINE;
-                    collums[c] = MAT_COLLUM;
-                    values[c] += mask(2, 1);
-                    c++;
+                if (MAT_COLLUM != -1) {
+                    rows[actual_nonzero] = MAT_LINE;
+                    collums[actual_nonzero] = MAT_COLLUM;
+                    values[actual_nonzero] += mask(2, 1);
+                    actual_nonzero++;
                 }
             }
-
-            // -Y neighbor
-            if (mask(0, 1) != 0.0)
-            {
+            // Check -Y
+            if (mask(0, 1) != 0.0) {
                 int MAT_COLLUM = GetIDP(i - 1, j);
-                if (MAT_COLLUM != -1)
-                {
-                    rows[c] = MAT_LINE;
-                    collums[c] = MAT_COLLUM;
-                    values[c] += mask(0, 1);
-                    c++;
+                if (MAT_COLLUM != -1) {
+                    rows[actual_nonzero] = MAT_LINE;
+                    collums[actual_nonzero] = MAT_COLLUM;
+                    values[actual_nonzero] += mask(0, 1);
+                    actual_nonzero++;
                 }
             }
-
-            // +X neighbor
-            if (mask(1, 2) != 0.0)
-            {
+            // Check +X
+            if (mask(1, 2) != 0.0) {
                 int MAT_COLLUM = GetIDP(i, j + 1);
-                if (MAT_COLLUM != -1)
-                {
-                    rows[c] = MAT_LINE;
-                    collums[c] = MAT_COLLUM;
-                    values[c] += mask(1, 2);
-                    c++;
+                if (MAT_COLLUM != -1) {
+                    rows[actual_nonzero] = MAT_LINE;
+                    collums[actual_nonzero] = MAT_COLLUM;
+                    values[actual_nonzero] += mask(1, 2);
+                    actual_nonzero++;
                 }
             }
-
-            // -X neighbor
-            if (mask(1, 0) != 0.0)
-            {
+            // Check -X
+            if (mask(1, 0) != 0.0) {
                 int MAT_COLLUM = GetIDP(i, j - 1);
-                if (MAT_COLLUM != -1)
-                {
-                    rows[c] = MAT_LINE;
-                    collums[c] = MAT_COLLUM;
-                    values[c] += mask(1, 0);
-                    c++;
+                if (MAT_COLLUM != -1) {
+                    rows[actual_nonzero] = MAT_LINE;
+                    collums[actual_nonzero] = MAT_COLLUM;
+                    values[actual_nonzero] += mask(1, 0);
+                    actual_nonzero++;
                 }
             }
         }
     }
 
+    // UPDATE GLOBAL NON_ZERO
+    // Important: We must use actual_nonzero for the CSR creation to avoid reading garbage memory
+    NON_ZERO = actual_nonzero; 
 
-
-    //destroy everythhing
-
+    // --- CLEANUP AMGX ---
     AMGX_SAFE_CALL(AMGX_solver_destroy(AMGX_Handle->solver));
     AMGX_SAFE_CALL(AMGX_vector_destroy(AMGX_Handle->Amgxx));
     AMGX_SAFE_CALL(AMGX_vector_destroy(AMGX_Handle->Amgxb));
+    AMGX_SAFE_CALL(AMGX_vector_destroy(AMGX_Handle->Amgxguess)); // FIX: Was missing, caused leak
     AMGX_SAFE_CALL(AMGX_matrix_destroy(AMGX_Handle->AmgxA));
 
-    PRESSURE_MATRIX = coo_to_csr(rows, collums, values, NON_ZERO, MatSize, MatSize); //this allocates a new matrix so we can free our memory from the COO values
+    // Cleanup old CSR struct if needed (assuming helper function exists or standard free)
+    // free(PRESSURE_MATRIX->values); free(PRESSURE_MATRIX->row_ptr); ... 
+    // For now, assuming coo_to_csr returns a fresh pointer:
+    
+    // Create CSR
+    PRESSURE_MATRIX = coo_to_csr(rows, collums, values, NON_ZERO, MatSize, MatSize);
 
     free(collums);
     free(rows);
     free(values);
 
+    // Scale values
+    double scale = 1.0 / (dh * dh * SIMULATION.RHO); // Precompute
+    for (int i = 0; i < NON_ZERO; i++) {
+        PRESSURE_MATRIX->values[i] *= scale;
+    }
 
+    // --- RECREATE AMGX ---
     AMGX_SAFE_CALL(AMGX_matrix_create(&AMGX_Handle->AmgxA, AMGX_Handle->rsrc, AMGX_mode_dDDI));
     AMGX_SAFE_CALL(AMGX_vector_create(&AMGX_Handle->Amgxb, AMGX_Handle->rsrc, AMGX_mode_dDDI));
     AMGX_SAFE_CALL(AMGX_vector_create(&AMGX_Handle->Amgxx, AMGX_Handle->rsrc, AMGX_mode_dDDI));
     AMGX_SAFE_CALL(AMGX_vector_create(&AMGX_Handle->Amgxguess, AMGX_Handle->rsrc, AMGX_mode_dDDI));
 
-    for (int i = 0; i < NON_ZERO; i++)
-    {
-        PRESSURE_MATRIX->values[i] *= (1.0 / (dh * dh*SIMULATION.RHO));
-    }
+    AMGX_SAFE_CALL(AMGX_matrix_upload_all(AMGX_Handle->AmgxA, MatSize, NON_ZERO, 1, 1,
+                                          PRESSURE_MATRIX->row_ptr, PRESSURE_MATRIX->col_ind, 
+                                          PRESSURE_MATRIX->values, nullptr));
 
-    AMGX_SAFE_CALL(AMGX_matrix_upload_all(AMGX_Handle->AmgxA, MatSize, NON_ZERO, 1, 1,PRESSURE_MATRIX->row_ptr, PRESSURE_MATRIX->col_ind, PRESSURE_MATRIX->values, nullptr));
     AMGX_SAFE_CALL(AMGX_vector_set_zero(AMGX_Handle->Amgxx, MatSize, 1));
     AMGX_SAFE_CALL(AMGX_vector_set_zero(AMGX_Handle->Amgxb, MatSize, 1));
     AMGX_SAFE_CALL(AMGX_vector_set_zero(AMGX_Handle->Amgxguess, MatSize, 1));
 
     AMGX_SAFE_CALL(AMGX_solver_create(&AMGX_Handle->solver, AMGX_Handle->rsrc, AMGX_mode_dDDI, AMGX_Handle->config));
     AMGX_SAFE_CALL(AMGX_solver_setup(AMGX_Handle->solver, AMGX_Handle->AmgxA));
-
-
-
- 
-
 }
 
 void PressureSolver2D::SolvePressure_EIGEN(MAC* grid)
@@ -699,9 +661,7 @@ void PressureSolver2D::SolvePressure_EIGEN(MAC* grid)
     double mean = 0.0;
 
     // Build RHS vector using IDP indexing
-    #pragma omp parallel
-    {
-    #pragma omp for
+
     for (int i = 1; i < Ny - 1; i++)
     {
         for (int j = 1; j < Nx - 1; j++)
@@ -720,7 +680,7 @@ void PressureSolver2D::SolvePressure_EIGEN(MAC* grid)
             }
         }
     }
-    }
+    
 
     if (SIMULATION.NEEDS_COMPATIBILITY_CONDITION)  // FIX: Use SIMULATION
     {
@@ -739,9 +699,7 @@ void PressureSolver2D::SolvePressure_EIGEN(MAC* grid)
     SOL = solver.solve(RHS);
 
     // Write solution back using IDP indexing
-    #pragma omp parallel
-    {
-    #pragma omp for
+
     for (int i = 1; i < Ny - 1; i++)
     {
         for (int j = 1; j < Nx - 1; j++)
@@ -751,10 +709,313 @@ void PressureSolver2D::SolvePressure_EIGEN(MAC* grid)
             grid->SetP(i, j, SOL(id));
         }
     }
-    }   
+     
 
     grid->SetNeumannBorderPressure();
     SIMULATION.lastPressureSolveTime = timer.stop();  // FIX: Use SIMULATION
+}
+
+void PressureSolver2D::UpdatePressureMatrix_SAFE(MAC *grid)
+{
+    double dt = SIMULATION.dt;
+    int Nx = SIMULATION.Nx;
+    int Ny = SIMULATION.Ny;
+    double dh = SIMULATION.dh;
+    PRESSURE_MASK.clear();
+    int MatSize = grid->GetFluidCellCount();
+
+    PRESSURE_MATRIX_EIGEN = Eigen::SparseMatrix<double>(MatSize, MatSize);
+    NON_ZERO = 0;
+
+    int indexing = 0;
+
+    // First pass: determine fluid cells and set indexing
+    for (int i = 0; i < Ny; i++)
+    {
+        for (int j = 0; j < Nx; j++)
+        {
+            Tensor<double, 2> mask = Tensor<double, 2>(3, 3);
+            mask.setZero();
+            
+            if (i == 0 || j == 0 || j == Nx - 1 || i == Ny - 1)
+            {
+                SetIDP(i, j, -1);
+                PRESSURE_MASK.push_back(mask);
+                continue;
+            }
+
+            if (grid->GetSolid(i, j) == FLUID_CELL)
+            {
+                SetIDP(i, j, indexing);
+                indexing += 1;
+                NON_ZERO++;
+
+                // check neighbors
+                if (grid->GetSolid(i, j + 1) == FLUID_CELL)
+                {
+                    NON_ZERO++;
+                    mask(1, 2) = 1.0;
+                    mask(1, 1) -= 1.0;
+                }
+                if (grid->GetSolid(i, j - 1) == FLUID_CELL)
+                {
+                    NON_ZERO++;
+    
+
+                mask(1, 0) = 1.0;
+                    mask(1, 1) -= 1.0;
+                }
+                if (grid->GetSolid(i + 1, j) == FLUID_CELL)
+                {
+                    NON_ZERO++;
+                    mask(2, 1) = 1.0;
+                    mask(1, 1) -= 1.0;
+                }
+                if (grid->GetSolid(i - 1, j) == FLUID_CELL)
+                {
+                    NON_ZERO++;
+                    mask(0, 1) = 1.0;
+                    mask(1, 1) -= 1.0;
+                }
+
+                if (grid->GetSolid(i, j + 1) == EMPTY_CELL)
+                {
+                    mask(1, 1) -= 1.0;
+                }
+                if (grid->GetSolid(i, j - 1) == EMPTY_CELL)
+                {
+                    mask(1, 1) -= 1.0;
+                }
+                if (grid->GetSolid(i + 1, j) == EMPTY_CELL)
+                {
+                    mask(1, 1) -= 1.0;
+                }
+                if (grid->GetSolid(i - 1, j) == EMPTY_CELL)
+                {
+                    mask(1, 1) -= 1.0;
+                }
+
+                PRESSURE_MASK.push_back(mask);
+            }
+            else
+            {
+                SetIDP(i, j, -1);
+                PRESSURE_MASK.push_back(mask);
+            }
+        }
+    }
+
+    // Second pass: build coefficient triplets for all non-zero entries
+    std::vector<Eigen::Triplet<double>> coefficients;
+    coefficients.reserve(NON_ZERO);
+    
+    for (int i = 0; i < Ny; i++)
+    {
+        for (int j = 0; j < Nx; j++)
+        {
+            int MAT_LINE = GetIDP(i, j);
+            if (MAT_LINE != -1)
+            {
+                Tensor<double, 2> mask = GetPressureMask(i, j);
+
+                // Diagonal element
+                if (mask(1, 1) != 0)
+                {
+                    coefficients.push_back(Eigen::Triplet<double>(MAT_LINE, MAT_LINE, mask(1, 1)));
+                }
+
+                // Off-diagonal elements (neighbors)
+                // Right neighbor
+                if (mask(1, 2) != 0)
+                {
+                    int neighbor_idx = GetIDP(i, j + 1);
+                    if (neighbor_idx != -1)
+                    {
+                        coefficients.push_back(Eigen::Triplet<double>(MAT_LINE, neighbor_idx, mask(1, 2)));
+                    }
+                }
+                
+                // Left neighbor
+                if (mask(1, 0) != 0)
+                {
+                    int neighbor_idx = GetIDP(i, j - 1);
+                    if (neighbor_idx != -1)
+                    {
+                        coefficients.push_back(Eigen::Triplet<double>(MAT_LINE, neighbor_idx, mask(1, 0)));
+                    }
+                }
+                
+                // Bottom neighbor
+                if (mask(0, 1) != 0)
+                {
+                    int neighbor_idx = GetIDP(i - 1, j);
+                    if (neighbor_idx != -1)
+                    {
+                        coefficients.push_back(Eigen::Triplet<double>(MAT_LINE, neighbor_idx, mask(0, 1)));
+                    }
+                }
+                
+                // Top neighbor
+                if (mask(2, 1) != 0)
+                {
+                    int neighbor_idx = GetIDP(i + 1, j);
+                    if (neighbor_idx != -1)
+                    {
+                        coefficients.push_back(Eigen::Triplet<double>(MAT_LINE, neighbor_idx, mask(2, 1)));
+                    }
+                }
+            }
+        }
+    }
+
+    // Actually build the sparse matrix from the triplets
+    PRESSURE_MATRIX_EIGEN.setFromTriplets(coefficients.begin(), coefficients.end());
+    
+    // Apply scaling factor
+    PRESSURE_MATRIX_EIGEN = ((-dt)/(dh*dh*SIMULATION.RHO)) * PRESSURE_MATRIX_EIGEN;
+    
+    //printf("MATSIZE = %d^2 -  NONZEROS = %d \n", MatSize, coefficients.size());
+    //printf("Pressure Update has finished!\n");
+    //printf("Pressure Matrix\n");
+    //std::cout << PRESSURE_MATRIX_EIGEN.toDense() << std::endl;
+}
+void PressureSolver2D::SolvePressure_AMGX_SAFE(MAC *grid)
+{
+    CPUTimer timer;
+    timer.start();
+        
+        UpdatePressureMatrix_SAFE(grid);
+        
+        double dh = grid->dh;
+        int MatSize = grid->GetFluidCellCount();
+        int NON_ZERO = PRESSURE_MATRIX_EIGEN.nonZeros();
+        
+        // Creating RHS vector
+        VectorXd RHS = VectorXd(MatSize);
+        
+        // We can parallelize the construction of the RHS vector
+        #pragma omp parallel
+        {
+            #pragma omp for
+            for (int i = 1; i < Ny-1; i++)
+            {
+                for (int j = 1; j < Nx-1; j++)
+                {
+                    if(GetIDP(i,j) == -1){
+                        continue;
+                    }
+                    RHS(GetIDP(i, j)) = -grid->GetDivergencyAt(i, j);
+                }
+            }
+        }
+        
+        // Solution vector
+        Eigen::VectorXd SOL = VectorXd(MatSize);
+        
+        // Convert Eigen sparse matrix to CSR format for AMGX
+        // First, make sure the matrix is in compressed format
+        if (!PRESSURE_MATRIX_EIGEN.isCompressed()) {
+            PRESSURE_MATRIX_EIGEN.makeCompressed();
+        }
+        
+        // Extract CSR components from Eigen sparse matrix
+        const int* outerIndexPtr = PRESSURE_MATRIX_EIGEN.outerIndexPtr(); // Row pointers
+        const int* innerIndexPtr = PRESSURE_MATRIX_EIGEN.innerIndexPtr(); // Column indices
+        const double* valuePtr = PRESSURE_MATRIX_EIGEN.valuePtr();       // Values
+        
+        // Create arrays for AMGX
+        int* row_ptr = new int[MatSize + 1];
+        int* col_ind = new int[NON_ZERO];
+        double* values = new double[NON_ZERO];
+        
+        // Copy data to AMGX format arrays
+        std::memcpy(row_ptr, outerIndexPtr, sizeof(int) * (MatSize + 1));
+        std::memcpy(col_ind, innerIndexPtr, sizeof(int) * NON_ZERO);
+        std::memcpy(values, valuePtr, sizeof(double) * NON_ZERO);
+        
+        // Scale values by 1.0/(dh*dh)
+        //#pragma omp parallel for
+        //for (int i = 0; i < NON_ZERO; i++) {
+        //    values[i] = values[i] * (1.0) / (dh * dh);
+        //}
+        
+        // Set up AMGX solver
+        AMGX_SAFE_CALL(AMGX_config_create_from_file(&AMGX_Handle->config, "solver_pressure_config.txt"));
+        AMGX_SAFE_CALL(AMGX_resources_create_simple(&AMGX_Handle->rsrc, AMGX_Handle->config));
+        AMGX_SAFE_CALL(AMGX_matrix_create(&AMGX_Handle->AmgxA, AMGX_Handle->rsrc, AMGX_mode_dDDI));
+        AMGX_SAFE_CALL(AMGX_vector_create(&AMGX_Handle->Amgxb, AMGX_Handle->rsrc, AMGX_mode_dDDI));
+        AMGX_SAFE_CALL(AMGX_vector_create(&AMGX_Handle->Amgxx, AMGX_Handle->rsrc, AMGX_mode_dDDI));
+        
+        // Upload matrix data to AMGX
+        AMGX_SAFE_CALL(AMGX_matrix_upload_all(AMGX_Handle->AmgxA, MatSize, NON_ZERO, 1, 1, 
+                                             row_ptr, col_ind, values, nullptr));
+        
+        // Initialize vectors
+        AMGX_SAFE_CALL(AMGX_vector_set_zero(AMGX_Handle->Amgxx, MatSize, 1));
+        AMGX_SAFE_CALL(AMGX_vector_set_zero(AMGX_Handle->Amgxb, MatSize, 1));
+        
+        // Create and set up the solver
+        AMGX_SAFE_CALL(AMGX_solver_create(&AMGX_Handle->solver, AMGX_Handle->rsrc, AMGX_mode_dDDI, AMGX_Handle->config));
+        AMGX_SAFE_CALL(AMGX_solver_setup(AMGX_Handle->solver, AMGX_Handle->AmgxA));
+        
+        // Create array for RHS values and copy from Eigen vector
+        double* rhs_values = new double[MatSize];
+        #pragma omp parallel for
+        for (int i = 0; i < MatSize; i++) {
+            rhs_values[i] = RHS(i);
+        }
+        
+        // Upload RHS vector to AMGX
+        AMGX_vector_upload(AMGX_Handle->Amgxb, MatSize, 1, rhs_values);
+        
+        // Solve using AMGX
+        AMGX_solver_solve_with_0_initial_guess(AMGX_Handle->solver, AMGX_Handle->Amgxb, AMGX_Handle->Amgxx);
+        
+        // Create array for solution values
+        double* sol_values = new double[MatSize];
+        
+        // Download solution from AMGX
+        AMGX_vector_download(AMGX_Handle->Amgxx, sol_values);
+        
+        // Copy solution to Eigen vector
+        #pragma omp parallel for
+        for (int i = 0; i < MatSize; i++) {
+            SOL(i) = sol_values[i];
+        }
+        
+        // We can parallelize the pressure update step
+        #pragma omp parallel
+        {
+            #pragma omp for
+            for (int i = 1; i < Ny-1; i++)
+            {
+                for (int j = 1; j < Nx-1; j++)
+                {
+                    if (GetIDP(i, j) == -1) continue;
+                    grid->SetP(i, j, SOL(GetIDP(i,j)));
+                }
+            }
+        }
+        
+        // Cleanup
+        delete[] row_ptr;
+        delete[] col_ind;
+        delete[] values;
+        delete[] rhs_values;
+        delete[] sol_values;
+        
+        // Cleanup AMGX resources
+        AMGX_SAFE_CALL(AMGX_solver_destroy(AMGX_Handle->solver));
+        AMGX_SAFE_CALL(AMGX_vector_destroy(AMGX_Handle->Amgxx));
+        AMGX_SAFE_CALL(AMGX_vector_destroy(AMGX_Handle->Amgxb));
+        AMGX_SAFE_CALL(AMGX_matrix_destroy(AMGX_Handle->AmgxA));
+        AMGX_SAFE_CALL(AMGX_resources_destroy(AMGX_Handle->rsrc));
+        AMGX_SAFE_CALL(AMGX_config_destroy(AMGX_Handle->config));
+
+        grid->SetNeumannBorderPressure();
+
+        SIMULATION.lastPressureSolveTime = timer.stop();
+        
 }
 
 
@@ -780,9 +1041,7 @@ void PressureSolver2D::SolvePressure_AMGX(MAC* grid)
 
     double mean = 0.0;
 
-    #pragma omp parallel
-    {
-    #pragma omp for
+
     for (int i = 1; i < Ny - 1; i++)
     {
         for (int j = 1; j < Nx - 1; j++)
@@ -801,7 +1060,7 @@ void PressureSolver2D::SolvePressure_AMGX(MAC* grid)
             }
         }
     }
-    }   
+      
 
     if (SIMULATION.NEEDS_COMPATIBILITY_CONDITION)  
     {
@@ -824,9 +1083,7 @@ void PressureSolver2D::SolvePressure_AMGX(MAC* grid)
     AMGX_SAFE_CALL(AMGX_unpin_memory(LHS));
 
     // Write solution back using IDP indexing
-    #pragma omp parallel
-    {
-    #pragma omp for
+
     for (int i = 1; i < Ny - 1; i++)
     {
         for (int j = 1; j < Nx - 1; j++)
@@ -836,7 +1093,7 @@ void PressureSolver2D::SolvePressure_AMGX(MAC* grid)
             grid->SetP(i, j, SOL[id]);
         }
     }
-    }
+    
 
     grid->SetNeumannBorderPressure();
     SIMULATION.lastPressureSolveTime = timer.stop();  

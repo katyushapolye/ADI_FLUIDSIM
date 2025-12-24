@@ -624,13 +624,13 @@ void SimulationManager::InitializeSimulation(const std::string& configFile){
                                SIMULATION.VelocityBoundaryFunction2D, ZERO2D, 
                                SIMULATION.PressureBoundaryFunction2D);
         PressureSolver2D::InitializePressureSolver(SIMULATION.GRID_SOL,true);
-        FLIP::InitializeFLIP(SIMULATION.GRID_SOL,SIMULATION.dt,1.0);
+        FLIP::InitializeFLIP(SIMULATION.GRID_SOL,SIMULATION.dt,0.9); //MAAKE AAN ALPHA LATER ON SIMCONFIG
         SIMULATION.GRID_ANT->SetBorder(SIMULATION.VelocityBoundaryFunction2D,SIMULATION.PressureBoundaryFunction2D,0);
 
         momentumStep = FLIP::FLIP_Momentum;
         if(GPU_ACCELERATION){
-            std::cout << "ERROR - AMGX IS STILL BUGGED WITH FLIP - THIS WILL PROBABLY NOT WORK!" << std::endl;;
-            pressureStep = PressureSolver2D::SolvePressure_AMGX;
+            std::cout << "ERROR - AMGX IS MAYBE BUGGED! - USE AT YOUR OWN RISK!" << std::endl;;
+            pressureStep = PressureSolver2D::SolvePressure_AMGX_SAFE;
 
         }
         else{

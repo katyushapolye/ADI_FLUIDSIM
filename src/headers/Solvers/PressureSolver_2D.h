@@ -60,10 +60,12 @@ public:
     static void InitializePressureSolver(MAC* grid,bool frameUpdate = true); //if frameupdate is true, it will rebuild the matrix each iteration, useufl if shifting domain
     static void UpdatePressureMatrix_Eigen(MAC* grid);
     static void UpdatePressureMatrix_AMGX(MAC* grid);
+    static void UpdatePressureMatrix_SAFE(MAC* grid);
+    
     //solves the pressure using the velocity and puts on the grid, debug only, uses eigen to solve on CPU
     static void SolvePressure_EIGEN(MAC* gridAnt);
     static void SolvePressure_AMGX(MAC* gridAnt);
-
+    static void SolvePressure_AMGX_SAFE(MAC* gridAnt);
     //takes the pressure on the grid and crrects the velocity
     static void ProjectPressure(MAC* grid);
 

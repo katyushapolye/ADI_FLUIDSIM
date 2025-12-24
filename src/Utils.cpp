@@ -2,17 +2,6 @@
 
 
 
-void CPUTimer::start() {
-            m_start = std::clock();
-        }
-        
-double CPUTimer::stop() {
-            std::clock_t end = std::clock();
-            return static_cast<double>(end - m_start) / CLOCKS_PER_SEC;
-        }
-    
-
-
     
 
 // Non-template function implementations
@@ -23,6 +12,16 @@ double GetWallTime() {
         return 0;
     }
     return (double)time.tv_sec + (double)time.tv_usec * .000001;
+}
+
+
+void CPUTimer::start() {
+    m_start = GetWallTime();  // Use wall time
+}
+
+double CPUTimer::stop() {
+    double end = GetWallTime();  // Use wall time
+    return end - m_start;
 }
 
 

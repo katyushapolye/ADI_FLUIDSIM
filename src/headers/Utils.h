@@ -81,16 +81,12 @@ struct Domain2D {
 
 
 class CPUTimer {
-    public:
-        void start();
-        double stop();
-        
-
-    
-    private:
-        std::clock_t m_start;
+public:
+    void start();
+    double stop();
+private:
+    double m_start;  // Changed from std::clock_t
 };
-
 // Function declarations
 template <typename Derived>
 void exportMatrixToFile(const Eigen::MatrixBase<Derived>& matrix, 

@@ -12,5 +12,5 @@ amg_solver:presweeps=1
 amg_solver:postsweeps=1
 amg_solver:cycle=V
 print_solve_stats=0
-print_grid_stats=0z
+print_grid_stats=0
 obtain_timings=0

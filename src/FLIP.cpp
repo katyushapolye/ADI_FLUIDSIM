@@ -33,9 +33,9 @@ void FLIP::InitializeFLIP(MAC *grid, double dt, double alpha)
         // printf("Offset: %f\n",offset[i]);
     }
 
-    for (int i = 0.0 * Ny; i < Ny * 0.95; i++)
+    for (int i = 0.5 * Ny; i < Ny * 0.9; i++)
     {
-        for (int j = 0.0 * Nx; j < Nx * 1.0; j++)
+        for (int j = 0.3 * Nx; j < Nx * 0.7; j++)
         {
             
             for (int io = 0; io < n; io++)
