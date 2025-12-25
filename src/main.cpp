@@ -31,10 +31,7 @@
 //what to do
 //continue this, we now only haave on simulation and one mac, so it should make it simpler
 //tomorrow, add 3 morre configs with the creation of the simulation manager
-//solver (ADI,FLIP)
-//GPU ACCELERATED
-//tidy tthis main, have 2 more files
-//simulation manager that abstract the step with function pointers
+// FIX ADI DIFFUSION MATRIX ON THE ADAPTATIVE TIMESTEPPING
 //visualization manaage, that handles all the UI stuff (mege grid visualizer into it)
 
 int main(int argc, char *argv[])

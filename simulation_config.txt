@@ -1,12 +1,12 @@
 # Simulation Configuration File - Prefereably, all units are in SI as far as I know
 
 # Performance Parameters
-DIMENSION = 2
-TYPE = FLIP
-GPU_ACCELERATION = 0   #GPU acceleration mightt not work with flip, still investigating why, i think it is becaause of grid and improper update of the resources
+DIMENSION = 3
+TYPE = ADI
+GPU_ACCELERATION = 1   #GPU acceleration mightt not work with flip, still investigating why, i think it is becaause of grid and improper update of the resources
 THREAD_COUNT = 8
-ADAPTATIVE_TIMESTEP = 0 #if true, will ignore the TIME_STEP configuration in favour of adapting
-MAX_CFL = 1.0         #max for both diffusion and advection cfls
+ADAPTATIVE_TIMESTEP = 1 #do not use for now, its bugged! <- ADI DOES NOT rebuild the diffusion matrixes, so they are outdated!
+MAX_CFL = 1         #max for both diffusion and advection cfls
 
 
 
@@ -14,16 +14,16 @@ MAX_CFL = 1.0         #max for both diffusion and advection cfls
 DOMAIN_X0 = 0.0
 DOMAIN_XF = 1.0
 DOMAIN_Y0 = 0.0
-DOMAIN_YF = 1.0
+DOMAIN_YF = 0.41
 DOMAIN_Z0 = 0.0
 DOMAIN_ZF = 0.41
 
 # Simulation parameters
-LEVEL_TYPE = DAMBREAK
-TIME_STEP =  0.01
-VISCOSITY = 0.001
+LEVEL_TYPE = OBSTACLE
+TIME_STEP =  0.001
+VISCOSITY = 0.02
 EPS_COEFICIENT = 0.1 #Used in reynolds calculation
-GRID_SIZE = 150
+GRID_SIZE = 32
 TOLERANCE = 10E-18
 NEEDS_COMPATIBILITY_CONDITION = 0
 

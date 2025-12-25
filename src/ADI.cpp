@@ -1367,8 +1367,6 @@ void ADI::InitializeADI(MAC* grid,double dt,Vec3(*VelocityBorderFunction)(double
     ADI::VelocityFontFunction = VelocityFont;
     ADI::PressureFunction = PressureFunction;
 
-
-    SIMULATION.dt = dt;
     ADI::dh = grid->dh;
     
     //sigma coefficient
@@ -1533,7 +1531,7 @@ void ADI::InitializeADI(MAC* grid,double dt,Vec3(*VelocityBorderFunction)(double
 
 }
 
-//IM BREAKING the component on the exit
+
 void ADI::SolveADIStep(MAC* gridAnt,MAC* gridSol,double time){
 
     //commoon to everyone
@@ -1541,11 +1539,88 @@ void ADI::SolveADIStep(MAC* gridAnt,MAC* gridSol,double time){
     //MAC Y_STEP_SOL = MAC();
     //MAC Z_STEP_SOL = MAC();
 
-
     //gridSol->SetGrid(VelocityBorderFunction,PressureFunction,time+dt);
     //X_STEP_SOL.SetGrid(VelocityBorderFunction,PressureFunction,time+dt);
     //Y_STEP_SOL.SetGrid(VelocityBorderFunction,PressureFunction,time+dt);
     //Z_STEP_SOL.SetGrid(VelocityBorderFunction,PressureFunction,time+dt);
+
+    if(ADAPTATIVE_TIMESTEP){ //we need to rebuildd the precalculated diffusion matrices
+        ADI::SIG = (SIMULATION.dt/(dh*dh*3.0))* (SIMULATION.EPS);
+              //X DIR MATRIXES
+        int u_size = (gridAnt->Nx + 1) - 4;   // U matrix size at x dir has less nodes, check diagram
+        int v_size = (gridAnt->Nx)     - 2;   // V matrix size is normal
+        int w_size = (gridAnt->Nx)     - 2;   // W matrix size
+
+        U_X_DIFF_Matrix.diagonal() = VectorXd::Constant(u_size, (2 * SIG) + 1);
+        V_X_DIFF_Matrix.diagonal() = VectorXd::Constant(v_size, (2 * SIG)+ 1);
+        W_X_DIFF_Matrix.diagonal() = VectorXd::Constant(w_size, (2 * SIG )+ 1);
+
+
+        
+        // Set sub-diagonals (-SIG values), will also work for a 4x4 in one value bcause for is an if too
+        for (int i = 1; i < u_size; i++) {
+            U_X_DIFF_Matrix(i, i-1) = -SIG;      // Lower diagonal
+            U_X_DIFF_Matrix(i-1, i) = -SIG;      // Upper diagonal
+        }
+
+        for (int i = 1; i < v_size; i++) {
+            V_X_DIFF_Matrix(i, i-1) = -SIG;      
+            V_X_DIFF_Matrix(i-1, i) = -SIG;    
+        }
+
+        for (int i = 1; i < w_size; i++) {
+            W_X_DIFF_Matrix(i, i-1) = -SIG;     
+            W_X_DIFF_Matrix(i-1, i) = -SIG;      
+        }
+
+        u_size = (gridAnt->Ny )    - 2;   
+        v_size = (gridAnt->Ny+1)   - 4;   
+        w_size = (gridAnt->Ny)     - 2;   
+
+        U_Y_DIFF_Matrix.diagonal() = VectorXd::Constant(u_size, 2 * SIG + 1);
+        V_Y_DIFF_Matrix.diagonal() = VectorXd::Constant(v_size, 2 * SIG + 1);
+        W_Y_DIFF_Matrix.diagonal() = VectorXd::Constant(w_size, 2 * SIG + 1);
+
+
+        for (int i = 1; i < u_size; i++) {
+            U_Y_DIFF_Matrix(i, i-1) = -SIG;      // Lower diagonal
+            U_Y_DIFF_Matrix(i-1, i) = -SIG;      // Upper diagonal
+        }
+
+        for (int i = 1; i < v_size; i++) {
+            V_Y_DIFF_Matrix(i, i-1) = -SIG;      
+            V_Y_DIFF_Matrix(i-1, i) = -SIG;    
+        }
+
+        for (int i = 1; i < w_size; i++) {
+            W_Y_DIFF_Matrix(i, i-1) = -SIG;     
+            W_Y_DIFF_Matrix(i-1, i) = -SIG;      
+        }
+
+        u_size = (gridAnt->Nz )    - 2;   
+        v_size = (gridAnt->Nz)     - 2;   
+        w_size = (gridAnt->Nz+1)   - 4;  
+        
+        U_Z_DIFF_Matrix.diagonal() = VectorXd::Constant(u_size, 2 * SIG + 1);
+        V_Z_DIFF_Matrix.diagonal() = VectorXd::Constant(v_size, 2 * SIG + 1);
+        W_Z_DIFF_Matrix.diagonal() = VectorXd::Constant(w_size, 2 * SIG + 1);
+        
+        for (int i = 1; i < u_size; i++) {
+            U_Z_DIFF_Matrix(i, i-1) = -SIG;      // Lower diagonal
+            U_Z_DIFF_Matrix(i-1, i) = -SIG;      // Upper diagonal
+        }
+        
+        for (int i = 1; i < v_size; i++) {
+            V_Z_DIFF_Matrix(i, i-1) = -SIG;      
+            V_Z_DIFF_Matrix(i-1, i) = -SIG;    
+        }
+        
+        for (int i = 1; i < w_size; i++) {
+            W_Z_DIFF_Matrix(i, i-1) = -SIG;     
+            W_Z_DIFF_Matrix(i-1, i) = -SIG;      
+        }
+
+    }
 
 
     double start = omp_get_wtime();

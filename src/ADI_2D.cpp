@@ -102,6 +102,7 @@ void ADI2D::SolveADI_X_U_Step_OPENMP(MAC* gridAnt, MAC* gridSol, MAC* velocityFi
 
                 local_U_X_Font(0)   +=  rho*gridSol->GetU(i,1)     *velocityField->GetU(i,2) +      sig*((gridSol->GetU(i,1)));
                 local_U_X_Font(c-1) += -rho*gridSol->GetU(i,Nx+1-2)*velocityField->GetU(i,Nx+1-3) + sig*(gridSol->GetU(i,Nx+1-2));
+                
 
                 local_U_X_Matrix = local_U_X_CONV_Matrix + local_U_X_DIFF_Matrix;
 
@@ -397,12 +398,11 @@ void ADI2D::InitializeADI2D(MAC* grid,double dt,Vec2(*VelocityBorderFunction)(do
     ADI2D::VelocityFontFunction = VelocityFont;
     ADI2D::PressureFunction = PressureFunction;
 
-
-    SIMULATION.dt = dt;
+    
     ADI2D::dh = grid->dh;
     
     //sigma coefficient
-    ADI2D::SIG = (dt/(dh*dh*2.0))* (SIMULATION.EPS);
+    ADI2D::SIG = (SIMULATION.dt/(dh*dh*2.0))* (SIMULATION.EPS);
 
 
     
@@ -509,10 +509,50 @@ void ADI2D::InitializeADI2D(MAC* grid,double dt,Vec2(*VelocityBorderFunction)(do
 
 //IM BREAKING the component on the exit
 void ADI2D::SolveADIStep(MAC* gridAnt,MAC* gridSol,double time){
-    SIMULATION.dt = SIMULATION.dt;
 
+    ADI2D::SIG = (SIMULATION.dt/(dh*dh*2.0))* (SIMULATION.EPS);
 
     double start = omp_get_wtime();
+
+    //we might as well just make the extra operations innsntead of making this garbage!
+    if(ADAPTATIVE_TIMESTEP){
+        int u_size = (gridAnt->Nx + 1) - 4;   // U matrix size at x dir has less nodes, check diagram
+        int v_size = (gridAnt->Nx)     - 2;   // V matrix size is normal
+
+
+        U_X_DIFF_Matrix.diagonal() = VectorXd::Constant(u_size, (2 * SIG) + 1);
+        V_X_DIFF_Matrix.diagonal() = VectorXd::Constant(v_size, (2 * SIG)+ 1);
+        // Set sub-diagonals (-SIG values), will also work for a 4x4 in one value bcause for is an if too
+        for (int i = 1; i < u_size; i++) {
+            U_X_DIFF_Matrix(i, i-1) = -SIG;      // Lower diagonal
+            U_X_DIFF_Matrix(i-1, i) = -SIG;      // Upper diagonal
+        }
+
+        for (int i = 1; i < v_size; i++) {
+            V_X_DIFF_Matrix(i, i-1) = -SIG;      
+            V_X_DIFF_Matrix(i-1, i) = -SIG;    
+        }
+
+
+        u_size = (gridAnt->Ny )    - 2;   
+        v_size = (gridAnt->Ny+1)   - 4;   
+
+
+        U_Y_DIFF_Matrix.diagonal() = VectorXd::Constant(u_size, 2 * SIG + 1);
+        V_Y_DIFF_Matrix.diagonal() = VectorXd::Constant(v_size, 2 * SIG + 1);
+        for (int i = 1; i < u_size; i++) {
+            U_Y_DIFF_Matrix(i, i-1) = -SIG;      // Lower diagonal
+            U_Y_DIFF_Matrix(i-1, i) = -SIG;      // Upper diagonal
+        }
+
+        for (int i = 1; i < v_size; i++) {
+            V_Y_DIFF_Matrix(i, i-1) = -SIG;      
+            V_Y_DIFF_Matrix(i-1, i) = -SIG;    
+        }
+
+
+
+    }
 
 
  
