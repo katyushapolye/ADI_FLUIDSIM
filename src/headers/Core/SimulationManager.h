@@ -95,7 +95,8 @@ void SimulationManager::UpdateTelemetry(){
             diffusionCFL,
             residual,
             SIMULATION.lastADISolveTime,
-            SIMULATION.lastPressureSolveTime
+            SIMULATION.lastPressureSolveTime,
+            SIMULATION.lastParticleUpdateTime
         );
 }
 
@@ -660,7 +661,8 @@ void  SimulationManager::InitializeExportTelemetry() {
 void SimulationManager::InitializeSimulation(const std::string& configFile){
     ConfigReader::loadConfig(SIMULATION, configFile);
     omp_set_num_threads(THREAD_COUNT);
-    TELEMETRY.Push(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,0.0);
+    Eigen::initParallel();
+    TELEMETRY.Push(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,0.0,0.0);
     
     std::cout << "MAC Grid initialized - Parameters\n"
               << "-dt = " << std::to_string(SIMULATION.dt) << "\n"

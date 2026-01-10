@@ -1000,7 +1000,7 @@ void PressureSolver2D::ProjectPressure(MAC* grid)
         */
 
     if(SIM_TYPE == SIM_TYPES::FLIP){ //I am not exactly sure if this is necessary, but since inflip we have solid fluid empty interfaces (that shift a lot), we need to impose those a lot
-        grid->SetBorder(SIMULATION.VelocityBoundaryFunction2D,SIMULATION.PressureBoundaryFunction2D,0);
+        //grid->SetBorder(SIMULATION.VelocityBoundaryFunction2D,SIMULATION.PressureBoundaryFunction2D,0);
     }
 }
 

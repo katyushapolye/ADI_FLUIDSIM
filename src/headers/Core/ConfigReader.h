@@ -147,7 +147,7 @@ namespace ConfigReader {
         }
 
         //flip stuff
-
+        SIMULATION.PHYSICAL_DIFFUSION = getInt("PHYSICAL_DIFFUSION",1);
         SIMULATION.PARTICLES_PER_CELL = getInt("PARTICLES_PER_CELL");
         SIMULATION.ALPHA = getDouble("ALPHA",1.0);
         SIMULATION.f.u = getDouble("Fu",0.0);

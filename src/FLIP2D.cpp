@@ -1,6 +1,7 @@
 #include "headers/Solvers/FLIP2D.h"
 #include "headers/Solvers/PressureSolver2D.h"
-
+#include "headers/Solvers/ADI2D.h"
+#include "headers/Solvers/DiffusionSolver2D.h"
 int FLIP2D::particleCount = 0;
 int FLIP2D::maxParticle = 0;
 int FLIP2D::particlePerCell = 0.0;
@@ -33,9 +34,9 @@ void FLIP2D::InitializeFLIP(MAC *grid, double dt, double alpha)
         // printf("Offset: %f\n",offset[i]);
     }
 
-    for (int i = 0.0 * Ny; i < Ny * 0.4; i++)
+    for (int i = 0.0 * Ny; i < Ny * 0.5; i++)
     {
-        for (int j = 0.0 * Nx; j < Nx * 0.4; j++)
+        for (int j = 0.0 * Nx; j < Nx * 0.5; j++)
         {
             
             for (int io = 0; io < n; io++)
@@ -71,15 +72,28 @@ void FLIP2D::InitializeFLIP(MAC *grid, double dt, double alpha)
     // create all particles
     //
     free(offset);
+
+    DiffusionSolver2D::InitializeDiffusionSolver(grid);
 }
 
 void FLIP2D::FLIP_Momentum(MAC* gridAnt,MAC* gridSol, double time){
         FLIP2D::FLIP_StepBeforeProjection(SIMULATION.GRID_SOL,SIMULATION.dt);
         SIMULATION.GRID_ANT->CopyGrid(*SIMULATION.GRID_SOL);
+
+        if(SIMULATION.PHYSICAL_DIFFUSION){
+            SIMULATION.GRID_SOL->SetGrid(ZERO2D,ZERO2D_SCALAR,0.0);
+            DiffusionSolver2D::SolveDiffusion_Eigen(SIMULATION.GRID_ANT,SIMULATION.GRID_SOL);
+            //ADI2D::SolveADIDiffusionStep(SIMULATION.GRID_ANT,SIMULATION.GRID_SOL,0);
+        }
+        //if ADI diffusion, use adi here
+
+
 }
 
 void FLIP2D::FLIP_Correction(MAC* grid){
         PressureSolver2D::ProjectPressure(SIMULATION.GRID_SOL); 
+
+        
         FLIP2D::FLIP_StepAfterProjection(SIMULATION.GRID_SOL,SIMULATION.dt);
 
 
@@ -358,31 +372,31 @@ void FLIP2D::UpdateParticles(double dt)
     {
 
 
-        particles[p].x += particles[p].u * dt;
-        particles[p].y += particles[p].v * dt;
+        particles[p].x += particles[p].u * dt ;
+        particles[p].y += particles[p].v * dt ;
         // small boudnary chheck for sanitty!
-        if (particles[p].x >= SIMULATION.domain.xf - SIMULATION.dh)
+        if (particles[p].x >= SIMULATION.domain.xf - SIMULATION.dh* 1.0001)
         {
             particles[p].x = SIMULATION.domain.xf - (SIMULATION.dh * 1.0001);
             particles[p].u = 0.0;
             particles[p].v = 0.0;
         }
 
-        if (particles[p].x <= SIMULATION.domain.x0 + SIMULATION.dh)
+        if (particles[p].x <= SIMULATION.domain.x0 + SIMULATION.dh* 1.0001)
         {
             particles[p].x = SIMULATION.domain.x0 + (SIMULATION.dh * 1.0001);
             particles[p].u = 0.0;
             particles[p].v = 0.0;
         }
 
-        if (particles[p].y >= SIMULATION.domain.yf - SIMULATION.dh)
+        if (particles[p].y >= SIMULATION.domain.yf - SIMULATION.dh* 1.0001)
         {
             particles[p].y = SIMULATION.domain.yf - (SIMULATION.dh * 1.0001);
             particles[p].v = 0.0;
             particles[p].u = 0.0;
         }
 
-        if (particles[p].y <= SIMULATION.domain.y0 + SIMULATION.dh)
+        if (particles[p].y <= SIMULATION.domain.y0 + SIMULATION.dh* 1.0001)
         {
             particles[p].y = SIMULATION.domain.y0 + (SIMULATION.dh * 1.0001);
             particles[p].v = 0.0;
@@ -503,12 +517,15 @@ double FLIP2D::k(double x, double y)
 
 void FLIP2D::FLIP_StepBeforeProjection(MAC *grid, double dt)
 {
+    double start = omp_get_wtime();
     // impose boundary
     // change the external force later
 
     //
     grid->SetBorder(SIMULATION.VelocityBoundaryFunction2D, SIMULATION.PressureBoundaryFunction2D, 0); // change here later
 
+    //this is the bulk of flip update
+    
     UpdateParticles(dt);
     UpdateFluidCells(grid);
     UpdateSpaceHash();
@@ -524,17 +541,21 @@ void FLIP2D::FLIP_StepBeforeProjection(MAC *grid, double dt)
     g.u = SIMULATION.f.u;// * sin((SIMULATION.rotation*M_PI)/180.0);
     g.v = SIMULATION.f.v;// * cos((SIMULATION.rotation*M_PI)/180.0);
 
-    // External program forces
-    g.u = g.u + queuedAcceleration.u;//* cos((SIMULATION.rotation*M_PI)/180.0);
-    g.v = g.v + queuedAcceleration.v;//* cos((SIMULATION.rotation*M_PI)/180.0);
 
     grid->AddAcceleration(g, dt);
+    double end = omp_get_wtime();
+
+    SIMULATION.lastParticleUpdateTime = end - start;
+    
 }
 void FLIP2D::FLIP_StepAfterProjection(MAC *grid, double dt)
 {
 
     //grid->SetBorder(SIMULATION.VelocityBoundaryFunction2D, SIMULATION.PressureBoundaryFunction2D, 0); // change here later
+    double start = omp_get_wtime();
     GridToParticle(grid);
+    double end = omp_get_wtime();
+    SIMULATION.lastParticleUpdateTime += end - start; //adding the last part
 }
 
 void FLIP2D::QueueAcceleration(Vec2 a)

@@ -80,7 +80,7 @@ public:
 
     //copies the arg to this grid
     void CopyGrid(MAC& grid);
-
+    void CopySolidMask(MAC& grid);
     void DestroyGrid();
 
     void AddAcceleration(Vec3 a,double dt);

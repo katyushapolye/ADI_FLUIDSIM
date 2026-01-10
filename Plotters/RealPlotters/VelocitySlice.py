@@ -220,9 +220,10 @@ def main(style_id=1):
     
     # Read and plot each resolution
     for res, color, ls in zip(resolutions, colors, line_styles):
+        res = 150
         try:
             # Construct directory path and find last VTI file
-            vtk_dir = f"Exports/CAVITY/{res}_re1000/VTK/"
+            vtk_dir = f"Exports/CAVITY/{res}_2D_re100/VTK/"
             last_vti = get_last_vti_file(vtk_dir)
             print(f"Processing {res}x{res} resolution: using {os.path.basename(last_vti)}")
             

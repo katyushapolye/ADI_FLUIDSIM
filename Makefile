@@ -2,6 +2,7 @@
 # AMGX paths
 ############################
 AMGX_PATH := $(HOME)/SDK/AMGX
+#AMGX_PATH :=/mnt/linux/PHYSICALDRIVE0p2/home/raphael/SDK/AMGX
 AMGX_INCLUDE_PATH := $(AMGX_PATH)/include
 AMGX_BUILD_PATH := $(AMGX_PATH)/build
 

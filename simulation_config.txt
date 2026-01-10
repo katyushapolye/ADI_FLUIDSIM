@@ -1,43 +1,44 @@
 # Simulation Configuration File - Prefereably, all units are in SI as far as I know
 
 # Performance Parameters
-DIMENSION = 2
-TYPE = ADI
-GPU_ACCELERATION = 1  #GPU acceleration mightt not work with flip, still investigating why, i think it is becaause of grid and improper update of the resources
+DIMENSION = 3
+TYPE = FLIP
+GPU_ACCELERATION = 0  #GPU acceleration mightt not work with flip, still investigating why, i think it is becaause of grid and improper update of the resources
 THREAD_COUNT = 8
 ADAPTATIVE_TIMESTEP = 1
-MAX_CFL = 1.0     #max for both diffusion and advection cfls
+MAX_CFL = 2.0    #max for both diffusion and advection cfls
 
 
 
 # Domain dimensions, SPH does work on asysmetric domain,s but the visualization is nto updated, will do it soon
 DOMAIN_X0 = 0.0
-DOMAIN_XF = 1.1
+DOMAIN_XF = 1.0
 DOMAIN_Y0 = 0.0
-DOMAIN_YF = 0.41
+DOMAIN_YF = 1.0
 DOMAIN_Z0 = 0.0
 DOMAIN_ZF = 1.0
 
 
 # Simulation parameters
-LEVEL_TYPE = OBSTACLE
-TIME_STEP =  0.00
-VISCOSITY = 0.001
-EPS_COEFICIENT = 0.1 #Used in reynolds calculation
+LEVEL_TYPE = DAMBREAK
+TIME_STEP =  0.001
+VISCOSITY = 0.01
+EPS_COEFICIENT = 1.0 #Used in reynolds calculation
 GRID_SIZE = 64
 TOLERANCE = 10E-18
 NEEDS_COMPATIBILITY_CONDITION = 0
 
 
 #FLIP Parameters
-PARTICLES_PER_CELL = 4
+PARTICLES_PER_CELL = 1
 ALPHA = 1.0
+PHYSICAL_DIFFUSION = 1
 Fu = 0.0
-Fv = -1.0
+Fv = -9.8
 Fw = 0.0
 
 #Exporting settings
 EXPORT_BASE_PATH = Exports
-REYNOLDS_NUMBER = 100.0       #used for naming export only, the actual value is based on the viscosity and the boundary conditions and char lenght
+REYNOLDS_NUMBER = 1000.0       #used for naming export only, the actual value is based on the viscosity and the boundary conditions and char lenght
 CHARACTERISTIC_LENGTH = 0.1 # 0.041 #3d is 0.0041 and 2dd is 0.1 for the obstacle
 MEAN_VELOCITY = 1.0

@@ -37,6 +37,7 @@ struct SIMULATION_CONFIG{
     int PARTICLES_PER_CELL = 4;
     Vec3 f;
     double ALPHA = 1.0;
+    bool PHYSICAL_DIFFUSION = true;
 
 
     Domain domain;
@@ -61,6 +62,7 @@ struct SIMULATION_CONFIG{
     double lastPressureMatAssemblyTime;
     double lastPressureSolveTime;
     double lastADISolveTime;
+    double lastParticleUpdateTime;
 
     double pressureResidual;
     
@@ -81,6 +83,7 @@ struct SimulationTelemetry {
     std::vector<double> residual;
     std::vector<double> cpu_time;
     std::vector<double> gpu_time;
+    std::vector<double> particle_time;
     std::vector<double> pressure_residual; 
 
     size_t max_samples = 5000;
@@ -92,7 +95,8 @@ struct SimulationTelemetry {
               double diffcfl_,
               double res,
               double cpu,
-              double gpu)
+              double gpu,
+              double particle)
     {
         auto push = [&](std::vector<double>& v, double x) {
             v.push_back(x);
@@ -108,6 +112,7 @@ struct SimulationTelemetry {
         push(residual, res);
         push(cpu_time, cpu);
         push(gpu_time, gpu);
+        push(particle_time, particle);
     }
 };
 

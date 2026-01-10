@@ -1,10 +1,10 @@
 config_version=2
-solver=BICGSTAB
+solver=CG
 max_iters=10000
 norm=L2
 convergence=RELATIVE_INI_CORE
 monitor_residual=1
-tolerance=1e-9
+tolerance=1e-12
 preconditioner(amg_solver)=AMG
 amg_solver:algorithm=CLASSICAL
 amg_solver:max_iters=2

@@ -45,6 +45,8 @@ class FLIP2D{
 
 
 
+
+
     public:
     static void InitializeFLIP(MAC* grid,double dt,double alpha =1.0);
     static void FLIP_StepBeforeProjection(MAC* grid,double dt);
