@@ -2,11 +2,11 @@
 
 # Performance Parameters
 DIMENSION = 2
-TYPE = FLIP
-GPU_ACCELERATION = 0  #GPU acceleration mightt not work with flip, still investigating why, i think it is becaause of grid and improper update of the resources
+TYPE = ADI
+GPU_ACCELERATION = 1  #GPU acceleration mightt not work with flip, still investigating why, i think it is becaause of grid and improper update of the resources
 THREAD_COUNT = 8
 ADAPTATIVE_TIMESTEP = 1
-MAX_CFL = 2.0    #max for both diffusion and advection cfls
+MAX_CFL = 1.0    #max for both diffusion and advection cfls
 
 
 
@@ -20,11 +20,11 @@ DOMAIN_ZF = 1.0
 
 
 # Simulation parameters
-LEVEL_TYPE = DAMBREAK
+LEVEL_TYPE = CAVITY
 TIME_STEP =  0.001
-VISCOSITY = 0.1
+VISCOSITY = 0.001
 EPS_COEFICIENT = 1.0 #Used in reynolds calculation
-GRID_SIZE = 150
+GRID_SIZE = 256
 TOLERANCE = 10E-18
 NEEDS_COMPATIBILITY_CONDITION = 0
 
@@ -32,7 +32,7 @@ NEEDS_COMPATIBILITY_CONDITION = 0
 #FLIP Parameters
 PARTICLES_PER_CELL = 4
 ALPHA = 1.0
-PHYSICAL_DIFFUSION = 1
+PHYSICAL_DIFFUSION = 0
 Fu = 0.0
 Fv = -9.8
 Fw = 0.0

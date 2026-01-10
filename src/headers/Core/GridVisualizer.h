@@ -384,7 +384,8 @@ void GridVisualizer::ExtractSliceData()
                 {
                     for (int x = 0; x <= grid2D->Nx; x++)
                     {
-                        int idx = y * heatmapCols + x;
+                        int flipped_y = (grid2D->Ny - 1) - y;
+                        int idx = flipped_y * heatmapCols + x;
                         heatmapData[idx] = grid2D->GetU(y, x);
                     }
                 }
@@ -399,7 +400,8 @@ void GridVisualizer::ExtractSliceData()
                 {
                     for (int x = 0; x < grid2D->Nx; x++)
                     {
-                        int idx = y * heatmapCols + x;
+                        int flipped_y = grid2D->Ny - y;
+                        int idx = flipped_y * heatmapCols + x;
                         heatmapData[idx] = grid2D->GetV(y, x);
                     }
                 }
@@ -414,7 +416,8 @@ void GridVisualizer::ExtractSliceData()
                 {
                     for (int x = 0; x < grid2D->Nx; x++)
                     {
-                        int idx = y * heatmapCols + x;
+                        int flipped_y = (grid2D->Ny - 1) - y;
+                        int idx = flipped_y * heatmapCols + x;
                         heatmapData[idx] = grid2D->GetP(y, x);
                     }
                 }
@@ -429,7 +432,8 @@ void GridVisualizer::ExtractSliceData()
                 {
                     for (int x = 0; x < grid2D->Nx; x++)
                     {
-                        int idx = y * heatmapCols + x;
+                        int flipped_y = (grid2D->Ny - 1) - y;
+                        int idx = flipped_y * heatmapCols + x;
                         heatmapData[idx] = grid2D->GetSolid(y, x);
                     }
                 }
@@ -444,7 +448,8 @@ void GridVisualizer::ExtractSliceData()
                 {
                     for (int x = 0; x < grid2D->Nx; x++)
                     {
-                        int idx = y * heatmapCols + x;
+                        int flipped_y = (grid2D->Ny - 1) - y;
+                        int idx = flipped_y * heatmapCols + x;
                         heatmapData[idx] = grid2D->GetDivergencyAt(y, x);
                     }
                 }
@@ -464,7 +469,8 @@ void GridVisualizer::ExtractSliceData()
                         float v = 0.5f * (grid2D->GetV(y, x) + grid2D->GetV(y + 1, x));
                         float mag = std::sqrt(u * u + v * v);
 
-                        int idx = y * heatmapCols + x;
+                        int flipped_y = (grid2D->Ny - 1) - y;
+                        int idx = flipped_y * heatmapCols + x;
                         heatmapData[idx] = mag;
                     }
                 }
@@ -506,7 +512,8 @@ void GridVisualizer::ExtractSliceData()
                     {
                         for (int x = 0; x <= grid3D->Nx; x++)
                         {
-                            int idx = y * heatmapCols + x;
+                            int flipped_y = (grid3D->Ny - 1) - y;
+                            int idx = flipped_y * heatmapCols + x;
                             heatmapData[idx] = grid3D->GetU(y, x, k);
                         }
                     }
@@ -521,7 +528,8 @@ void GridVisualizer::ExtractSliceData()
                     {
                         for (int x = 0; x < grid3D->Nx; x++)
                         {
-                            int idx = y * heatmapCols + x;
+                            int flipped_y = grid3D->Ny - y;
+                            int idx = flipped_y * heatmapCols + x;
                             heatmapData[idx] = grid3D->GetV(y, x, k);
                         }
                     }
@@ -537,7 +545,8 @@ void GridVisualizer::ExtractSliceData()
                     {
                         for (int x = 0; x < grid3D->Nx; x++)
                         {
-                            int idx = y * heatmapCols + x;
+                            int flipped_y = (grid3D->Ny - 1) - y;
+                            int idx = flipped_y * heatmapCols + x;
                             heatmapData[idx] = grid3D->GetW(y, x, k);
                         }
                     }
@@ -552,7 +561,8 @@ void GridVisualizer::ExtractSliceData()
                     {
                         for (int x = 0; x < grid3D->Nx; x++)
                         {
-                            int idx = y * heatmapCols + x;
+                            int flipped_y = (grid3D->Ny - 1) - y;
+                            int idx = flipped_y * heatmapCols + x;
                             heatmapData[idx] = grid3D->GetP(y, x, k);
                         }
                     }
@@ -567,7 +577,8 @@ void GridVisualizer::ExtractSliceData()
                     {
                         for (int x = 0; x < grid3D->Nx; x++)
                         {
-                            int idx = y * heatmapCols + x;
+                            int flipped_y = (grid3D->Ny - 1) - y;
+                            int idx = flipped_y * heatmapCols + x;
                             heatmapData[idx] = grid3D->GetSolid(y, x, k);
                         }
                     }
@@ -582,7 +593,8 @@ void GridVisualizer::ExtractSliceData()
                     {
                         for (int x = 0; x < grid3D->Nx; x++)
                         {
-                            int idx = y * heatmapCols + x;
+                            int flipped_y = (grid3D->Ny - 1) - y;
+                            int idx = flipped_y * heatmapCols + x;
                             heatmapData[idx] = grid3D->GetDivergencyAt(y, x, k);
                         }
                     }
@@ -602,7 +614,8 @@ void GridVisualizer::ExtractSliceData()
                             float w = 0.5f * (grid3D->GetW(y, x, k) + grid3D->GetW(y, x, k + 1));
                             float mag = std::sqrt(u * u + v * v + w * w);
 
-                            int idx = y * heatmapCols + x;
+                            int flipped_y = (grid3D->Ny - 1) - y;
+                            int idx = flipped_y * heatmapCols + x;
                             heatmapData[idx] = mag;
                         }
                     }
@@ -624,7 +637,8 @@ void GridVisualizer::ExtractSliceData()
                     {
                         for (int x = 0; x <= grid3D->Nx; x++)
                         {
-                            int idx = z * heatmapCols + x;
+                            int flipped_z = (grid3D->Nz - 1) - z;
+                            int idx = flipped_z * heatmapCols + x;
                             heatmapData[idx] = grid3D->GetU(y, x, z);
                         }
                     }
@@ -640,7 +654,8 @@ void GridVisualizer::ExtractSliceData()
                     {
                         for (int x = 0; x < grid3D->Nx; x++)
                         {
-                            int idx = z * heatmapCols + x;
+                            int flipped_z = (grid3D->Nz - 1) - z;
+                            int idx = flipped_z * heatmapCols + x;
                             heatmapData[idx] = grid3D->GetV(y, x, z);
                         }
                     }
@@ -655,7 +670,8 @@ void GridVisualizer::ExtractSliceData()
                     {
                         for (int x = 0; x < grid3D->Nx; x++)
                         {
-                            int idx = z * heatmapCols + x;
+                            int flipped_z = grid3D->Nz - z;
+                            int idx = flipped_z * heatmapCols + x;
                             heatmapData[idx] = grid3D->GetW(y, x, z);
                         }
                     }
@@ -670,7 +686,8 @@ void GridVisualizer::ExtractSliceData()
                     {
                         for (int x = 0; x < grid3D->Nx; x++)
                         {
-                            int idx = z * heatmapCols + x;
+                            int flipped_z = (grid3D->Nz - 1) - z;
+                            int idx = flipped_z * heatmapCols + x;
                             heatmapData[idx] = grid3D->GetP(y, x, z);
                         }
                     }
@@ -685,7 +702,8 @@ void GridVisualizer::ExtractSliceData()
                     {
                         for (int x = 0; x < grid3D->Nx; x++)
                         {
-                            int idx = z * heatmapCols + x;
+                            int flipped_z = (grid3D->Nz - 1) - z;
+                            int idx = flipped_z * heatmapCols + x;
                             heatmapData[idx] = grid3D->GetSolid(y, x, z);
                         }
                     }
@@ -700,7 +718,8 @@ void GridVisualizer::ExtractSliceData()
                     {
                         for (int x = 0; x < grid3D->Nx; x++)
                         {
-                            int idx = z * heatmapCols + x;
+                            int flipped_z = (grid3D->Nz - 1) - z;
+                            int idx = flipped_z * heatmapCols + x;
                             heatmapData[idx] = grid3D->GetDivergencyAt(y, x, z);
                         }
                     }
@@ -720,7 +739,8 @@ void GridVisualizer::ExtractSliceData()
                             float w = 0.5f * (grid3D->GetW(y, x, z) + grid3D->GetW(y, x, z + 1));
                             float mag = std::sqrt(u * u + v * v + w * w);
 
-                            int idx = z * heatmapCols + x;
+                            int flipped_z = (grid3D->Nz - 1) - z;
+                            int idx = flipped_z * heatmapCols + x;
                             heatmapData[idx] = mag;
                         }
                     }
@@ -743,7 +763,8 @@ void GridVisualizer::ExtractSliceData()
                     {
                         for (int y = 0; y < grid3D->Ny; y++)
                         {
-                            int idx = z * heatmapCols + y;
+                            int flipped_z = (grid3D->Nz - 1) - z;
+                            int idx = flipped_z * heatmapCols + y;
                             heatmapData[idx] = grid3D->GetU(y, x, z);
                         }
                     }
@@ -758,7 +779,8 @@ void GridVisualizer::ExtractSliceData()
                     {
                         for (int y = 0; y <= grid3D->Ny; y++)
                         {
-                            int idx = z * heatmapCols + y;
+                            int flipped_z = (grid3D->Nz - 1) - z;
+                            int idx = flipped_z * heatmapCols + y;
                             heatmapData[idx] = grid3D->GetV(y, x, z);
                         }
                     }
@@ -773,7 +795,8 @@ void GridVisualizer::ExtractSliceData()
                     {
                         for (int y = 0; y < grid3D->Ny; y++)
                         {
-                            int idx = z * heatmapCols + y;
+                            int flipped_z = grid3D->Nz - z;
+                            int idx = flipped_z * heatmapCols + y;
                             heatmapData[idx] = grid3D->GetW(y, x, z);
                         }
                     }
@@ -788,7 +811,8 @@ void GridVisualizer::ExtractSliceData()
                     {
                         for (int y = 0; y < grid3D->Ny; y++)
                         {
-                            int idx = z * heatmapCols + y;
+                            int flipped_z = (grid3D->Nz - 1) - z;
+                            int idx = flipped_z * heatmapCols + y;
                             heatmapData[idx] = grid3D->GetP(y, x, z);
                         }
                     }
@@ -803,7 +827,8 @@ void GridVisualizer::ExtractSliceData()
                     {
                         for (int y = 0; y < grid3D->Ny; y++)
                         {
-                            int idx = z * heatmapCols + y;
+                            int flipped_z = (grid3D->Nz - 1) - z;
+                            int idx = flipped_z * heatmapCols + y;
                             heatmapData[idx] = grid3D->GetSolid(y, x, z);
                         }
                     }
@@ -818,7 +843,8 @@ void GridVisualizer::ExtractSliceData()
                     {
                         for (int y = 0; y < grid3D->Ny; y++)
                         {
-                            int idx = z * heatmapCols + y;
+                            int flipped_z = (grid3D->Nz - 1) - z;
+                            int idx = flipped_z * heatmapCols + y;
                             heatmapData[idx] = grid3D->GetDivergencyAt(y, x, z);
                         }
                     }
@@ -838,7 +864,8 @@ void GridVisualizer::ExtractSliceData()
                             float w = 0.5f * (grid3D->GetW(y, x, z) + grid3D->GetW(y, x, z + 1));
                             float mag = std::sqrt(u * u + v * v + w * w);
 
-                            int idx = z * heatmapCols + y;
+                            int flipped_z = (grid3D->Nz - 1) - z;
+                            int idx = flipped_z * heatmapCols + y;
                             heatmapData[idx] = mag;
                         }
                     }
@@ -859,6 +886,7 @@ void GridVisualizer::ExtractSliceData()
         ComputeMinMax();
     }
 }
+
 
 void GridVisualizer::Render(int IT, double time, double residual, double frameTime, bool &simulationRunning, bool &stepOnce)
 {
@@ -1249,7 +1277,7 @@ void GridVisualizer::RenderMAC()
         {
             if (ImPlot::BeginPlot("##Heatmap", ImVec2(plotWidth, plotHeight)))
             {
-                ImPlot::SetupAxes(nullptr, nullptr, 0, ImPlotAxisFlags_Invert);
+                ImPlot::SetupAxes(nullptr, nullptr, 0, 0);
                 ImPlot::SetupAxisLimits(ImAxis_X1, 0, width, ImGuiCond_Always);
                 ImPlot::SetupAxisLimits(ImAxis_Y1, 0, height, ImGuiCond_Always);
 
@@ -1493,172 +1521,180 @@ void GridVisualizer::RenderFLIP()
             delete[] colors;
         }
     }
-if(DIMENSION == 3 && SIM_TYPE == SIM_TYPES::FLIP){
-    if(FLIP3D::particleCount > 0){
-        
-        static int stride = 2;
-        static bool showVelocityColors = true;
-        
-        ImGui::Checkbox("Show Velocity Colors", &showVelocityColors);
-        ImGui::SameLine();
-        ImGui::SliderInt("Particle Stride", &stride, 1, 100);
-        
-        int sampledCount = (FLIP3D::particleCount + stride - 1) / stride;
-        float *xs, *ys, *zs;
-        ImVec4 *colors;
-        xs = new float[sampledCount];
-        ys = new float[sampledCount];
-        zs = new float[sampledCount];
-        colors = new ImVec4[sampledCount];
-        
-        // Calculate velocity magnitudes and find min/max for normalization
-        float minVel = FLT_MAX, maxVel = -FLT_MAX;
-        int sampleIndex = 0;
-        for(int p = 0; p < FLIP3D::particleCount; p += stride){
-            float velMag = sqrt(FLIP3D::particles[p].u * FLIP3D::particles[p].u + 
-                                FLIP3D::particles[p].v * FLIP3D::particles[p].v +
-                                FLIP3D::particles[p].w * FLIP3D::particles[p].w);
-            minVel = fmin(minVel, velMag);
-            maxVel = fmax(maxVel, velMag);
-            sampleIndex++;
-        }
-        
-        // Handle case where all velocities are the same
-        if(maxVel - minVel < 1e-6f){
-            maxVel = minVel + 1.0f;
-        }
-        
-        ImPlot::PushColormap(ImPlotColormap_Jet);
-        ImPlot3D::PushColormap(ImPlot3DColormap_Jet);
-        
-        // Map velocities to colors
-        sampleIndex = 0;
-        for(int p = 0; p < FLIP3D::particleCount; p += stride){
-            xs[sampleIndex] = FLIP3D::particles[p].x;
-            ys[sampleIndex] = FLIP3D::particles[p].y;
-            zs[sampleIndex] = FLIP3D::particles[p].z;
-            
-            if(showVelocityColors){
-                float velMag = sqrt(FLIP3D::particles[p].u * FLIP3D::particles[p].u + 
+    if (DIMENSION == 3 && SIM_TYPE == SIM_TYPES::FLIP)
+    {
+        if (FLIP3D::particleCount > 0)
+        {
+
+            static int stride = 2;
+            static bool showVelocityColors = true;
+
+            ImGui::Checkbox("Show Velocity Colors", &showVelocityColors);
+            ImGui::SameLine();
+            ImGui::SliderInt("Particle Stride", &stride, 1, 100);
+
+            int sampledCount = (FLIP3D::particleCount + stride - 1) / stride;
+            float *xs, *ys, *zs;
+            ImVec4 *colors;
+            xs = new float[sampledCount];
+            ys = new float[sampledCount];
+            zs = new float[sampledCount];
+            colors = new ImVec4[sampledCount];
+
+            // Calculate velocity magnitudes and find min/max for normalization
+            float minVel = FLT_MAX, maxVel = -FLT_MAX;
+            int sampleIndex = 0;
+            for (int p = 0; p < FLIP3D::particleCount; p += stride)
+            {
+                float velMag = sqrt(FLIP3D::particles[p].u * FLIP3D::particles[p].u +
                                     FLIP3D::particles[p].v * FLIP3D::particles[p].v +
                                     FLIP3D::particles[p].w * FLIP3D::particles[p].w);
-                
-                // Normalize to [0, 1]
-                float t = (maxVel > minVel) ? (velMag - minVel) / (maxVel - minVel) : 0.0f;
-                t = fmax(0.0f, fmin(1.0f, t)); // Clamp to [0, 1]
-                
-                colors[sampleIndex] = ImPlot::SampleColormap(t);
+                minVel = fmin(minVel, velMag);
+                maxVel = fmax(maxVel, velMag);
+                sampleIndex++;
             }
-            else{
-                // Default color when velocity colors are disabled
-                colors[sampleIndex] = ImVec4(0.0f, 0.5f, 1.0f, 1.0f); // Blue
+
+            // Handle case where all velocities are the same
+            if (maxVel - minVel < 1e-6f)
+            {
+                maxVel = minVel + 1.0f;
             }
-            
-            sampleIndex++;
+
+            ImPlot::PushColormap(ImPlotColormap_Jet);
+            ImPlot3D::PushColormap(ImPlot3DColormap_Jet);
+
+            // Map velocities to colors
+            sampleIndex = 0;
+            for (int p = 0; p < FLIP3D::particleCount; p += stride)
+            {
+                xs[sampleIndex] = FLIP3D::particles[p].x;
+                ys[sampleIndex] = FLIP3D::particles[p].y;
+                zs[sampleIndex] = FLIP3D::particles[p].z;
+
+                if (showVelocityColors)
+                {
+                    float velMag = sqrt(FLIP3D::particles[p].u * FLIP3D::particles[p].u +
+                                        FLIP3D::particles[p].v * FLIP3D::particles[p].v +
+                                        FLIP3D::particles[p].w * FLIP3D::particles[p].w);
+
+                    // Normalize to [0, 1]
+                    float t = (maxVel > minVel) ? (velMag - minVel) / (maxVel - minVel) : 0.0f;
+                    t = fmax(0.0f, fmin(1.0f, t)); // Clamp to [0, 1]
+
+                    colors[sampleIndex] = ImPlot::SampleColormap(t);
+                }
+                else
+                {
+                    // Default color when velocity colors are disabled
+                    colors[sampleIndex] = ImVec4(0.0f, 0.5f, 1.0f, 1.0f); // Blue
+                }
+
+                sampleIndex++;
+            }
+
+            float width = 1.0f, height = 1.0f;
+            float aspectRatio = width / height;
+            float baseHeight = 600.0f;
+            float plotHeight = baseHeight;
+            float plotWidth = plotHeight * aspectRatio;
+
+            // Begin horizontal layout for plot and colorbar
+            ImGui::BeginGroup();
+
+            if (ImPlot3D::BeginPlot("Scatter Plot", ImVec2(plotWidth, plotHeight)))
+            {
+                ImPlot3D::SetupAxisLimits(ImAxis3D_X, SIMULATION.domain.x0, SIMULATION.domain.xf);
+                ImPlot3D::SetupAxisLimits(ImAxis3D_Y, SIMULATION.domain.y0, SIMULATION.domain.yf);
+                ImPlot3D::SetupAxisLimits(ImAxis3D_Z, SIMULATION.domain.z0, SIMULATION.domain.zf);
+
+                // Plot with individual colors
+                for (int i = 0; i < sampledCount; i++)
+                {
+                    ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Circle, 1.0, colors[i], IMPLOT_AUTO, colors[i]);
+                    ImPlot3D::PlotScatter("##particle", &xs[i], &zs[i], &ys[i], 1);
+                }
+
+                ImPlot3D::EndPlot();
+            }
+
+            // Only show colorbar if velocity colors are enabled
+            if (showVelocityColors)
+            {
+                ImGui::SameLine();
+
+                // Draw colorbar using ImGui
+                ImGui::BeginChild("##ColorbarChild", ImVec2(100.0f, plotHeight), false, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+
+                ImDrawList *draw_list = ImGui::GetWindowDrawList();
+                ImVec2 canvas_pos = ImVec2(ImGui::GetCursorScreenPos().x, ImGui::GetCursorScreenPos().y + 10.0f);
+                ImVec2 canvas_size = ImVec2(100.0f, plotHeight - ImGui::GetStyle().WindowPadding.y * 2);
+
+                float barWidth = 30.0f;
+                float tickLength = 5.0f;
+                float labelOffset = 10.0f;
+
+                // Draw gradient rectangles
+                int gradientSteps = 100;
+                for (int i = 0; i < gradientSteps; i++)
+                {
+                    float t = (float)i / (gradientSteps - 1);
+                    ImVec4 color = ImPlot::SampleColormap(t);
+                    ImU32 col32 = ImGui::ColorConvertFloat4ToU32(color);
+
+                    float y_start = canvas_pos.y + (1.0f - t) * canvas_size.y;
+                    float y_end = canvas_pos.y + (1.0f - (float)(i + 1) / (gradientSteps - 1)) * canvas_size.y;
+
+                    draw_list->AddRectFilled(
+                        ImVec2(canvas_pos.x, y_start),
+                        ImVec2(canvas_pos.x + barWidth, y_end),
+                        col32);
+                }
+
+                // Draw border around colorbar
+                draw_list->AddRect(
+                    ImVec2(canvas_pos.x, canvas_pos.y),
+                    ImVec2(canvas_pos.x + barWidth, canvas_pos.y + canvas_size.y),
+                    IM_COL32(255, 255, 255, 255));
+
+                // Draw ticks and labels
+                int numTicks = 5;
+                for (int i = 0; i < numTicks; i++)
+                {
+                    float t = (float)i / (numTicks - 1);
+                    float y_pos = canvas_pos.y + (1.0f - t) * canvas_size.y;
+                    float value = minVel + t * (maxVel - minVel);
+
+                    // Draw tick mark
+                    draw_list->AddLine(
+                        ImVec2(canvas_pos.x + barWidth, y_pos),
+                        ImVec2(canvas_pos.x + barWidth + tickLength, y_pos),
+                        IM_COL32(255, 255, 255, 255),
+                        1.0f);
+
+                    // Draw label
+                    char label[32];
+                    snprintf(label, sizeof(label), "%.2f", value);
+                    ImVec2 text_size = ImGui::CalcTextSize(label);
+                    draw_list->AddText(
+                        ImVec2(canvas_pos.x + barWidth + labelOffset, y_pos - text_size.y * 0.5f),
+                        IM_COL32(255, 255, 255, 255),
+                        label);
+                }
+
+                ImGui::EndChild();
+            }
+
+            ImGui::EndGroup();
+
+            ImPlot::PopColormap();
+            ImPlot3D::PopColormap();
+
+            delete[] xs;
+            delete[] ys;
+            delete[] zs;
+            delete[] colors;
         }
-        
-        float width = 1.0f, height = 1.0f;
-        float aspectRatio = width / height;
-        float baseHeight = 600.0f;
-        float plotHeight = baseHeight;
-        float plotWidth = plotHeight * aspectRatio;
-        
-        // Begin horizontal layout for plot and colorbar
-        ImGui::BeginGroup();
-        
-        if (ImPlot3D::BeginPlot("Scatter Plot", ImVec2(plotWidth, plotHeight))) {
-            ImPlot3D::SetupAxisLimits(ImAxis3D_X, SIMULATION.domain.x0, SIMULATION.domain.xf);
-            ImPlot3D::SetupAxisLimits(ImAxis3D_Y, SIMULATION.domain.y0, SIMULATION.domain.yf);
-            ImPlot3D::SetupAxisLimits(ImAxis3D_Z, SIMULATION.domain.z0, SIMULATION.domain.zf);
-            
-            // Plot with individual colors
-            for(int i = 0; i < sampledCount; i++){
-                ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Circle, 1.0, colors[i], IMPLOT_AUTO, colors[i]);
-                ImPlot3D::PlotScatter("##particle", &xs[i], &zs[i], &ys[i], 1);
-            }
-            
-            ImPlot3D::EndPlot();
-        }
-        
-        // Only show colorbar if velocity colors are enabled
-        if(showVelocityColors){
-            ImGui::SameLine();
-            
-            // Draw colorbar using ImGui
-            ImGui::BeginChild("##ColorbarChild", ImVec2(100.0f, plotHeight), false, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-            
-            ImDrawList* draw_list = ImGui::GetWindowDrawList();
-            ImVec2 canvas_pos = ImVec2(ImGui::GetCursorScreenPos().x, ImGui::GetCursorScreenPos().y + 10.0f);
-            ImVec2 canvas_size = ImVec2(100.0f, plotHeight - ImGui::GetStyle().WindowPadding.y * 2);
-            
-            float barWidth = 30.0f;
-            float tickLength = 5.0f;
-            float labelOffset = 10.0f;
-            
-            // Draw gradient rectangles
-            int gradientSteps = 100;
-            for(int i = 0; i < gradientSteps; i++){
-                float t = (float)i / (gradientSteps - 1);
-                ImVec4 color = ImPlot::SampleColormap(t);
-                ImU32 col32 = ImGui::ColorConvertFloat4ToU32(color);
-                
-                float y_start = canvas_pos.y + (1.0f - t) * canvas_size.y;
-                float y_end = canvas_pos.y + (1.0f - (float)(i + 1) / (gradientSteps - 1)) * canvas_size.y;
-                
-                draw_list->AddRectFilled(
-                    ImVec2(canvas_pos.x, y_start),
-                    ImVec2(canvas_pos.x + barWidth, y_end),
-                    col32
-                );
-            }
-            
-            // Draw border around colorbar
-            draw_list->AddRect(
-                ImVec2(canvas_pos.x, canvas_pos.y),
-                ImVec2(canvas_pos.x + barWidth, canvas_pos.y + canvas_size.y),
-                IM_COL32(255, 255, 255, 255)
-            );
-            
-            // Draw ticks and labels
-            int numTicks = 5;
-            for(int i = 0; i < numTicks; i++){
-                float t = (float)i / (numTicks - 1);
-                float y_pos = canvas_pos.y + (1.0f - t) * canvas_size.y;
-                float value = minVel + t * (maxVel - minVel);
-                
-                // Draw tick mark
-                draw_list->AddLine(
-                    ImVec2(canvas_pos.x + barWidth, y_pos),
-                    ImVec2(canvas_pos.x + barWidth + tickLength, y_pos),
-                    IM_COL32(255, 255, 255, 255),
-                    1.0f
-                );
-                
-                // Draw label
-                char label[32];
-                snprintf(label, sizeof(label), "%.2f", value);
-                ImVec2 text_size = ImGui::CalcTextSize(label);
-                draw_list->AddText(
-                    ImVec2(canvas_pos.x + barWidth + labelOffset, y_pos - text_size.y * 0.5f),
-                    IM_COL32(255, 255, 255, 255),
-                    label
-                );
-            }
-            
-            ImGui::EndChild();
-        }
-        
-        ImGui::EndGroup();
-        
-        ImPlot::PopColormap();
-        ImPlot3D::PopColormap();
-        
-        delete[] xs;
-        delete[] ys;
-        delete[] zs;
-        delete[] colors;
     }
-}
 }
 
 void GridVisualizer::RenderSPH()
@@ -1686,19 +1722,63 @@ void GridVisualizer::RenderSPH()
         if (ImGui::BeginTabItem("SPH Particles 2D"))
         {
             static int stride = 1;
-            ImGui::SliderInt("Particle Stride", &stride, 1, 100);
+            static bool showVelocityColors = true;
+
+            ImGui::Checkbox(" - Magnitude Colors", &showVelocityColors);
+            ImGui::SameLine();
+            ImGui::SliderInt(" - Particle Stride", &stride, 1, 100);
 
             int sampledCount = (SPH2D::particleCount + stride - 1) / stride;
-            float *xs, *ys, *zs;
+            float *xs, *ys;
+            ImVec4 *colors;
             xs = new float[sampledCount];
             ys = new float[sampledCount];
-            zs = new float[sampledCount];
+            colors = new ImVec4[sampledCount];
 
+            // Calculate velocity magnitudes and find min/max for normalization
+            float minVel = FLT_MAX, maxVel = -FLT_MAX;
             int sampleIndex = 0;
+            for (int p = 0; p < SPH2D::particleCount; p += stride)
+            {
+                float velMag = sqrt(SPH2D::particles[p].u * SPH2D::particles[p].u +
+                                    SPH2D::particles[p].v * SPH2D::particles[p].v);
+                minVel = fmin(minVel, velMag);
+                maxVel = fmax(maxVel, velMag);
+                sampleIndex++;
+            }
+
+            // Handle case where all velocities are the same
+            if (maxVel - minVel < 1e-6f)
+            {
+                maxVel = minVel + 1.0f;
+            }
+
+            ImPlot::PushColormap(ImPlotColormap_Jet);
+
+            // Map velocities to colors
+            sampleIndex = 0;
             for (int p = 0; p < SPH2D::particleCount; p += stride)
             {
                 xs[sampleIndex] = SPH2D::particles[p].x;
                 ys[sampleIndex] = SPH2D::particles[p].y;
+
+                if (showVelocityColors)
+                {
+                    float velMag = sqrt(SPH2D::particles[p].u * SPH2D::particles[p].u +
+                                        SPH2D::particles[p].v * SPH2D::particles[p].v);
+
+                    // Normalize to [0, 1]
+                    float t = (maxVel > minVel) ? (velMag - minVel) / (maxVel - minVel) : 0.0f;
+                    t = fmax(0.0f, fmin(1.0f, t)); // Clamp to [0, 1]
+
+                    colors[sampleIndex] = ImPlot::SampleColormap(t);
+                }
+                else
+                {
+                    // Default color when velocity colors are disabled
+                    colors[sampleIndex] = ImVec4(0.0f, 0.5f, 1.0f, 1.0f); // Blue
+                }
+
                 sampleIndex++;
             }
 
@@ -1708,53 +1788,99 @@ void GridVisualizer::RenderSPH()
             float plotHeight = baseHeight;
             float plotWidth = plotHeight * aspectRatio;
 
+            // Begin horizontal layout for plot and colorbar
+            ImGui::BeginGroup();
+
             if (ImPlot::BeginPlot("Scatter Plot", ImVec2(plotWidth, plotHeight)))
             {
-                ImPlot::SetNextMarkerStyle(ImPlotMarker_Square, 1.0);
+                ImPlot::SetupAxes("x", "y", 0, 0);
                 ImPlot::SetupAxisLimits(ImAxis_X1, 0.0, 1.0);
                 ImPlot::SetupAxisLimits(ImAxis_Y1, 0.0, 1.0);
-                ImPlot::PlotScatter("Particles", xs, ys, sampledCount);
+
+                // Plot with individual colors
+                for (int i = 0; i < sampledCount; i++)
+                {
+                    ImPlot::SetNextMarkerStyle(ImPlotMarker_Square, 1.0, colors[i], IMPLOT_AUTO, colors[i]);
+                    ImPlot::PlotScatter("##particle", &xs[i], &ys[i], 1);
+                }
+
                 ImPlot::EndPlot();
             }
+
+            // Only show colorbar if velocity colors are enabled
+            if (showVelocityColors)
+            {
+                ImGui::SameLine();
+
+                // Draw colorbar using ImGui
+                ImGui::BeginChild("##ColorbarChild", ImVec2(100.0f, plotHeight), false, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+
+                ImDrawList *draw_list = ImGui::GetWindowDrawList();
+                ImVec2 canvas_pos = ImVec2(ImGui::GetCursorScreenPos().x, ImGui::GetCursorScreenPos().y + 10.0f);
+                ImVec2 canvas_size = ImVec2(100.0f, plotHeight - ImGui::GetStyle().WindowPadding.y * 2);
+
+                float barWidth = 30.0f;
+                float tickLength = 5.0f;
+                float labelOffset = 10.0f;
+
+                // Draw gradient rectangles
+                int gradientSteps = 100;
+                for (int i = 0; i < gradientSteps; i++)
+                {
+                    float t = (float)i / (gradientSteps - 1);
+                    ImVec4 color = ImPlot::SampleColormap(t);
+                    ImU32 col32 = ImGui::ColorConvertFloat4ToU32(color);
+
+                    float y_start = canvas_pos.y + (1.0f - t) * canvas_size.y;
+                    float y_end = canvas_pos.y + (1.0f - (float)(i + 1) / (gradientSteps - 1)) * canvas_size.y;
+
+                    draw_list->AddRectFilled(
+                        ImVec2(canvas_pos.x, y_start),
+                        ImVec2(canvas_pos.x + barWidth, y_end),
+                        col32);
+                }
+
+                // Draw border around colorbar
+                draw_list->AddRect(
+                    ImVec2(canvas_pos.x, canvas_pos.y),
+                    ImVec2(canvas_pos.x + barWidth, canvas_pos.y + canvas_size.y),
+                    IM_COL32(255, 255, 255, 255));
+
+                // Draw ticks and labels
+                int numTicks = 5;
+                for (int i = 0; i < numTicks; i++)
+                {
+                    float t = (float)i / (numTicks - 1);
+                    float y_pos = canvas_pos.y + (1.0f - t) * canvas_size.y;
+                    float value = minVel + t * (maxVel - minVel);
+
+                    // Draw tick mark
+                    draw_list->AddLine(
+                        ImVec2(canvas_pos.x + barWidth, y_pos),
+                        ImVec2(canvas_pos.x + barWidth + tickLength, y_pos),
+                        IM_COL32(255, 255, 255, 255),
+                        1.0f);
+
+                    // Draw label
+                    char label[32];
+                    snprintf(label, sizeof(label), "%.2f", value);
+                    ImVec2 text_size = ImGui::CalcTextSize(label);
+                    draw_list->AddText(
+                        ImVec2(canvas_pos.x + barWidth + labelOffset, y_pos - text_size.y * 0.5f),
+                        IM_COL32(255, 255, 255, 255),
+                        label);
+                }
+
+                ImGui::EndChild();
+            }
+
+            ImGui::EndGroup();
+
+            ImPlot::PopColormap();
 
             delete[] xs;
             delete[] ys;
-            delete[] zs;
-            ImGui::EndTabItem();
-        }
-
-        if (ImGui::BeginTabItem("SPH Density Contour"))
-        {
-            float width = 1.0f, height = 1.0f;
-            float aspectRatio = width / height;
-            float baseHeight = 600.0f;
-            float plotHeight = baseHeight;
-            float plotWidth = plotHeight * aspectRatio;
-
-            constexpr int M = 256;
-            constexpr int N = 256;
-
-            static float zs[M * N];
-            for (int i = 0; i < M; i++)
-            {
-                for (int j = 0; j < N; j++)
-                {
-                    int idx = j * M + i;
-                    zs[idx] = SPH2D::GetDensityAt(j * 1.0 / 256.0, i * 1.0 / 256.0);
-                }
-            }
-
-            ImPlot::PushColormap(ImPlotColormap_Jet);
-            if (ImPlot::BeginPlot("##Contour", ImVec2(plotWidth, plotHeight)))
-            {
-                ImPlot::SetupAxes("x", "y", 0, ImPlotAxisFlags_Invert);
-                ImPlot::PlotHeatmap("Density", zs, M, N, 0, 0, nullptr, ImPlotPoint(0, 0), ImPlotPoint(1, 1), ImPlotHeatmapFlags_ColMajor);
-                ImPlot::EndPlot();
-            }
-            ImGui::SameLine();
-            float max_density = *std::max_element(zs, zs + M * N);
-            ImPlot::ColormapScale("##HeatScale", 0, max_density, ImVec2(60, plotHeight));
-            ImPlot::PopColormap();
+            delete[] colors;
 
             ImGui::EndTabItem();
         }
@@ -1949,7 +2075,7 @@ void GridVisualizer::RenderTelemetryUI()
             TELEMETRY.particle_time.back()};
 
         static double y_max = 0.05;
-        static int x_max = (SIM_TYPE == SIM_TYPES::FLIP || SIM_TYPE != SIM_TYPES::FLIP) ? 3 : 2;
+        static int x_max = (SIM_TYPE != SIM_TYPES::ADI ) ? 3 : 2;
         y_max = (std::max)(y_max, 1.2 * (std::max)(values[0], values[1]));
         y_max = (std::max)(y_max, 1.2 * values[2]);
         ImPlot::SetupAxes(nullptr, "Seconds");

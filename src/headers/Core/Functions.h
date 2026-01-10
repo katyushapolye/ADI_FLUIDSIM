@@ -349,8 +349,9 @@ inline int OBSTACLE_SOLID_MASK_2D(int  i,int j){
     }
     double dh = SIMULATION.dh;
     double radius = 0.05;
+    double center = 0.2;
 
-    if(pow((j*dh - 0.2),2) +pow((i*dh - 0.2),2)  < radius*radius){
+    if(pow((j*dh - center),2) +pow((i*dh - center),2)  < radius*radius){
         return SOLID_CELL;
     }
 
