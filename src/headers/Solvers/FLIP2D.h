@@ -7,7 +7,7 @@
 #include <unsupported/Eigen/CXX11/Tensor>  
 
 #include "math.h"
-
+#include <omp.h>
 #ifndef FLIP2D_H
 #define FLIP2D_H
 
@@ -39,8 +39,6 @@ class FLIP2D{
     static MAC gridAnt;
 
     static Vec2 queuedAcceleration;
-
-
 
 
 

@@ -26,50 +26,29 @@ double CPUTimer::stop() {
 
 
 
-//this has checks for now different systems
 void TDMA(Eigen::MatrixXd& mat, Eigen::VectorXd& font, Eigen::VectorXd& sol) {
     const int n = mat.rows();
-    
-    // Safety exit for empty systems
-    if (n <= 0) return;
-    
-    // Handle 1x1 systems (common at corners/narrow gaps)
-    if (n == 1) {
-        sol.resize(1);
-        if (std::abs(mat(0,0)) > 1e-12) sol(0) = font(0) / mat(0,0);
-        else sol(0) = 0.0;
-        return;
-    }
-
     sol.resize(n);
+    
     Eigen::VectorXd lower(n-1), main(n), upper(n-1);
-
-    // Extraction with safety bounds
     for(int i = 0; i < n-1; ++i) {
-        lower(i) = mat(i+1,i);
-        main(i) = mat(i,i);
-        upper(i) = mat(i,i+1);
+        lower(i) = mat(i+1,i);    // Subdiagonal
+        main(i) = mat(i,i);       // Main diagonal
+        upper(i) = mat(i,i+1);    // Superdiagonal
     }
-    main(n-1) = mat(n-1,n-1); 
+    main(n-1) = mat(n-1,n-1);     // Last main diagonal element
 
     // Forward elimination
     for(int i = 1; i < n; ++i) {
-        if (std::abs(main(i-1)) < 1e-15) continue; // Prevent division by zero
         const double factor = lower(i-1) / main(i-1);
         main(i) -= factor * upper(i-1);
         font(i) -= factor * font(i-1);
     }
 
     // Backward substitution
-    if (std::abs(main(n-1)) > 1e-15) sol(n-1) = font(n-1) / main(n-1);
-    else sol(n-1) = 0.0;
-
+    sol(n-1) = font(n-1) / main(n-1);
     for(int i = n-2; i >= 0; --i) {
-        if (std::abs(main(i)) > 1e-15) {
-            sol(i) = (font(i) - upper(i) * sol(i+1)) / main(i);
-        } else {
-            sol(i) = sol(i+1); // Fallback for singular rows
-        }
+        sol(i) = (font(i) - upper(i) * sol(i+1)) / main(i);
     }
 }
 

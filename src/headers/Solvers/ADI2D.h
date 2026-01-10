@@ -83,17 +83,12 @@ private:
     static void SolveADI_X_V_Step_OPENMP(MAC* gridAnt,MAC* gridSol,MAC* velocityField,double time);
     static void SolveADI_Y_V_Step_OPENMP(MAC* gridAnt,MAC* gridSol,MAC* velocityField,double time);
 
-    static void SolveADI_X_U_DIFF_Step_OPENMP(MAC* gridAnt,MAC* gridSol,double time);
-    static void SolveADI_Y_U_DIFF_Step_OPENMP(MAC* gridAnt,MAC* gridSol,double time);
 
-    static void SolveADI_X_V_DIFF_Step_OPENMP(MAC* gridAnt,MAC* gridSol,double time);
-    static void SolveADI_Y_V_DIFF_Step_OPENMP(MAC* gridAnt,MAC* gridSol,double time);
 
 
 public:
     static void InitializeADI2D(MAC* grid,double dt,Vec2(*VelocityBorderFunction)(double, double, double),Vec2(*VelocityFont)(double, double, double),double(*PressureFunction)(double, double, double));
     static void SolveADIStep(MAC* gridAnt,MAC* gridSol,double time);
-    static void SolveADIDiffusionStep(MAC* gridAnt,MAC* gridSol,double time);
 
 };
 #endif

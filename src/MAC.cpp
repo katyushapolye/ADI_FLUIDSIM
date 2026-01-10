@@ -322,9 +322,6 @@ void MAC::SetBorder(Vec3 (*VelocityFunction)(double, double, double, double), do
 {    if(is2D){
         std::cout << "ERROR - MISMATCHED FUNCTION CALLED ON SET BORDER" << std::endl;
     }
-
-
-
     // u z face
     for (int j = 0; j < Nx + 1; j++)
     {
@@ -760,23 +757,6 @@ void MAC::SetBorder(Vec2 (*VelocityFunction)(double, double, double), double (*P
 {
 
 
-    for (int i = 1; i < Ny-1; i++) {
-        for (int j = 2; j < Nx + 1-2; j++) {
-            if(this->GetSolid(i,j-1) == SOLID_CELL || this->GetSolid(i,j) == SOLID_CELL){
-                SetU(i, j, 0);
-            }
-        }
-    }
-    
-    for (int i = 2; i < Ny + 1-2; i++) {
-        for (int j = 1; j < Nx-1; j++) {
-            if(this->GetSolid(i-1,j) == SOLID_CELL || this->GetSolid(i,j) == SOLID_CELL){
-                SetV(i, j, 0);
-            }
-        }
-    }
-
-
     // u y face
     for (int j = 0; j < Nx + 1; j++)
     {
@@ -817,6 +797,9 @@ void MAC::SetBorder(Vec2 (*VelocityFunction)(double, double, double), double (*P
     
 
     // w face
+
+ 
+
     // Pressure
 
 
@@ -834,23 +817,6 @@ void MAC::SetBorder(Vec2 (*VelocityFunction)(double, double, double), double (*P
             this->SetP(Ny - 1, j, PressureFunction(j * dh + dh / 2.0 - this->omega.x0, (Ny - 1) * dh + dh / 2.0 - this->omega.y0, t));
 
     }
-
-
-    //final check for empty cells just for cleaniiness, since we impose continuity, this goes all the way so we just clena up a bit to be easier to view
-    FOR_EACH_2D_NON_BOUNDARY_CELL(
-        if(GetSolid(i,j)){
-            if(GetSolid(i,j+1) == EMPTY_CELL){
-                SetU(i,j+1,0);
-            }
-            if(GetSolid(i+1,j) == EMPTY_CELL){
-                SetV(i+1,j,0);
-            }
-
-    }
-
-    )
-
-
 }
 
 // sets a homogeneous neumman boundary condition at the exit of the x domain, for the canal experiments
@@ -891,13 +857,12 @@ double MAC::GetGradPzAt(int i, int j)
 void MAC::AddAcceleration(Vec2 a,double dt){
     //only add to fluid faces
     FOR_EACH_2D_NON_BOUNDARY_U_FACE(
-            if(this->GetSolid(i,j-1) == FLUID_CELL || this->GetSolid(i,j) == FLUID_CELL){
+            if((this->GetSolid(i,j-1) == FLUID_CELL ||this->GetSolid(i,j-1) == EMPTY_CELL) && (this->GetSolid(i,j) == FLUID_CELL || this->GetSolid(i,j) == EMPTY_CELL)){
                 SetU(i, j, GetU(i,j) + a.u*dt);}
             )
 
     FOR_EACH_2D_NON_BOUNDARY_V_FACE(
-            
-            if(this->GetSolid(i-1,j) == FLUID_CELL || this->GetSolid(i,j) == FLUID_CELL){
+            if((this->GetSolid(i-1,j) == FLUID_CELL || this->GetSolid(i-1,j) == EMPTY_CELL)&& (this->GetSolid(i,j) == FLUID_CELL || this->GetSolid(i,j) == EMPTY_CELL)){
                 SetV(i, j, GetV(i,j) + a.v*dt);
             }
     )    
@@ -1477,47 +1442,6 @@ void MAC::CopyGrid(MAC &grid) {
                 }
             }
         }
-    }
-}
-
-void MAC::CopySolidMask(MAC &grid) {
-    if(is2D) {
-        if(!grid.is2D){
-            std::cout << "ERROR - MISMATCHE GRID COPY OPERATION (3D COPIED IN 2D)";
-            return;
-        }
-        // 2D case - no k index
-        
-        // Copy pressure and solid mask
-        for (int i = 0; i < this->Ny; i++) {
-            for (int j = 0; j < this->Nx; j++) {
-                this->SetP(i, j, grid.GetP(i, j));
-                this->SetSolid(i, j, grid.GetSolid(i, j));
-            }
-        }
-        
-
-
-    } else {
-        // 3D case
-        if(grid.is2D){
-            std::cout << "ERROR - MISMATCHE GRID COPY OPERATION (2D COPIED IN 3D)";
-        }
-        
-        // Copy pressure and solid mask
-        for (int k = 0; k < this->Nz; k++) {
-            for (int i = 0; i < this->Ny; i++) {
-                for (int j = 0; j < this->Nx; j++) {
-                    this->SetP(i, j, k, grid.GetP(i, j, k));
-                    this->SetSolid(i, j, k, grid.GetSolid(i, j, k));
-                }
-            }
-        }
-        
-
-        
-        
-
     }
 }
 

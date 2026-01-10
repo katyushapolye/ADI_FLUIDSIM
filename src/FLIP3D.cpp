@@ -34,9 +34,9 @@ void FLIP3D::InitializeFLIP(MAC *grid, double dt, double alpha)
         offset[i] = ((i + 1) * 1.0) / (double)(n + 1);
     }
 
-    for (int i = 0.0 * Ny; i < Ny * 0.5; i++)
+    for (int i = 0.0 * Ny; i < Ny * 0.4; i++)
     {
-        for (int j = 0.0 * Nx; j < Nx * 0.5; j++)
+        for (int j = 0.0 * Nx; j < Nx * 0.4; j++)
         {
             for (int k = 0.0 * Nz; k < Nz * 1.0; k++)
             {
@@ -79,6 +79,7 @@ void FLIP3D::InitializeFLIP(MAC *grid, double dt, double alpha)
 
     UpdateSpaceHash();
     free(offset);
+
     DiffusionSolver3D::InitializeDiffusionSolver(grid);
 }
 
@@ -87,10 +88,10 @@ void FLIP3D::FLIP_Momentum(MAC* gridAnt, MAC* gridSol, double time)
     FLIP3D::FLIP_StepBeforeProjection(SIMULATION.GRID_SOL, SIMULATION.dt);
     SIMULATION.GRID_ANT->CopyGrid(*SIMULATION.GRID_SOL);
     if(SIMULATION.PHYSICAL_DIFFUSION){
-            SIMULATION.GRID_SOL->SetGrid(ZERO,ZERO_SCALAR,0.0);
-            DiffusionSolver3D::SolveDiffusion_Eigen(SIMULATION.GRID_ANT,SIMULATION.GRID_SOL);
-            //ADI2D::SolveADIDiffusionStep(SIMULATION.GRID_ANT,SIMULATION.GRID_SOL,0);
+            DiffusionSolver3D::SolveDiffusion_Eigen(gridAnt,gridSol);
+            
     }
+
 }
 
 void FLIP3D::FLIP_Correction(MAC* grid)
@@ -106,7 +107,6 @@ void FLIP3D::ExportParticles(int IT)
 
     if(!outFile.is_open()){
         std::cout << "FLIP EXPORT FAILED!" << std::endl;
-        return;
     }
 
     outFile << "x,y,z,u,v,w" << std::endl;
@@ -694,23 +694,21 @@ void FLIP3D::FLIP_StepBeforeProjection(MAC *grid, double dt)
     g.w = g.w + queuedAcceleration.w;
 
     grid->AddAcceleration(g, dt);
-    double end = omp_get_wtime();
-
-    SIMULATION.lastParticleUpdateTime = end - start;
+        double end = omp_get_wtime();
+    SIMULATION.lastParticleTime = end-start;
 }
 
+
 void FLIP3D::FLIP_StepAfterProjection(MAC *grid, double dt)
-
-{   double start = omp_get_wtime();
+{
     GridToParticle(grid);
-    double end = omp_get_wtime();
-
-    SIMULATION.lastParticleUpdateTime += end - start;
 }
 
 void FLIP3D::QueueAcceleration(Vec3 a)
-{
+{    double start = omp_get_wtime();
     queuedAcceleration = a;
+        double end = omp_get_wtime();
+    SIMULATION.lastParticleTime += end-start;
 }
 
 double FLIP3D::GetTotalKineticEnergy()

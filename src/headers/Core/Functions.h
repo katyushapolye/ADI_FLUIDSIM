@@ -367,13 +367,13 @@ inline int OBSTACLE_SOLID_MASK_2D(int  i,int j){
 ///////////////////DAMBREAK 2D/////////////////////
 *///////////////////////////////////////////////
 
-//i might have fucked up the sing in the ADI code
 inline Vec2 DAMBREAK_FONT_2D(double x, double y,double t){
     Vec2 r;
-    r.v = -SIMULATION.f.v;
-    r.u = -SIMULATION.f.u;
+    r.u = SIMULATION.f.v;
 
-
+    //if(y >= 1.0 - (SIMULATION.dh*1.55)){
+    //    r.u = 1.0;
+    //}
 
 
     return r;

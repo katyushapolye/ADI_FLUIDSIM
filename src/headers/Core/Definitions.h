@@ -37,7 +37,7 @@ struct SIMULATION_CONFIG{
     int PARTICLES_PER_CELL = 4;
     Vec3 f;
     double ALPHA = 1.0;
-    bool PHYSICAL_DIFFUSION = true;
+    bool PHYSICAL_DIFFUSION = 0;
 
 
     Domain domain;
@@ -62,7 +62,7 @@ struct SIMULATION_CONFIG{
     double lastPressureMatAssemblyTime;
     double lastPressureSolveTime;
     double lastADISolveTime;
-    double lastParticleUpdateTime;
+    double lastParticleTime;
 
     double pressureResidual;
     

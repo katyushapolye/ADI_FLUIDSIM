@@ -114,6 +114,7 @@ namespace ConfigReader {
         SIMULATION.dt = getDouble("TIME_STEP", config.dt);
         SIMULATION.RE = getDouble("REYNOLDS_NUMBER", config.RE);
         SIMULATION.EPS = getDouble("VISCOSITY", 0.01);
+        SIMULATION.PHYSICAL_DIFFUSION = getInt("PHYSICAL_DIFFUSION", 0);
         SIMULATION.GRID_SIZE = getInt("GRID_SIZE", config.GRID_SIZE);
         SIMULATION.TOLERANCE = getDouble("TOLERANCE", config.TOLERANCE);
         SIMULATION.ExportPath = getString("EXPORT_BASE_PATH", "Exports");
@@ -147,7 +148,7 @@ namespace ConfigReader {
         }
 
         //flip stuff
-        SIMULATION.PHYSICAL_DIFFUSION = getInt("PHYSICAL_DIFFUSION",1);
+
         SIMULATION.PARTICLES_PER_CELL = getInt("PARTICLES_PER_CELL");
         SIMULATION.ALPHA = getDouble("ALPHA",1.0);
         SIMULATION.f.u = getDouble("Fu",0.0);

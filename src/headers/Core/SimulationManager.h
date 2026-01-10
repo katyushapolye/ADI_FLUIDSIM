@@ -96,7 +96,7 @@ void SimulationManager::UpdateTelemetry(){
             residual,
             SIMULATION.lastADISolveTime,
             SIMULATION.lastPressureSolveTime,
-            SIMULATION.lastParticleUpdateTime
+            SIMULATION.lastParticleTime
         );
 }
 
@@ -661,7 +661,6 @@ void  SimulationManager::InitializeExportTelemetry() {
 void SimulationManager::InitializeSimulation(const std::string& configFile){
     ConfigReader::loadConfig(SIMULATION, configFile);
     omp_set_num_threads(THREAD_COUNT);
-    Eigen::initParallel();
     TELEMETRY.Push(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,0.0,0.0);
     
     std::cout << "MAC Grid initialized - Parameters\n"

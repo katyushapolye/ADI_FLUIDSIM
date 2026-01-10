@@ -5,6 +5,7 @@
 #include <Eigen/Sparse>
 #include <unsupported/Eigen/CXX11/Tensor>  
 #include "math.h"
+#include <omp.h>
 
 #ifndef FLIP3D_H
 #define FLIP3D_H
