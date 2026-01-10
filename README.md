@@ -17,6 +17,8 @@ Validation Test Cases
 
 ADI(3D/2D) Eulerian (Gasses) Solver:
  - Lid-Driven Cavity Flow [1]
+ - <img width="1499" height="653" alt="image" src="https://github.com/user-attachments/assets/a5a2324f-73f5-4d81-a3a9-f7b1a6ab6dcd" />
+
  - Flow Past Obstacle (Wind tunnel with sphere/circle) [2]
  - Backward-Facing Step [3]
 
