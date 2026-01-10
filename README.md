@@ -5,9 +5,11 @@ This project provides three distinct fluid simulation approaches, each optimized
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/8b7bc56b-0ada-4539-b3bd-5d0c79ea61f9" alt="Navier-Stokes" width="32%" />
-  <img src="https://github.com/user-attachments/assets/65fe26f0-55aa-421a-a05e-ddc790c12b6b" alt="FLIP" width="32%" />
-  <img src="https://github.com/user-attachments/assets/f6aef0b2-51be-44f6-b2c5-611333d42781" alt="SPH" width="32%" />
+  <img src="https://github.com/user-attachments/assets/5883b681-293b-47b8-a01c-7488ba54122e" alt="FLIP" width="32%" />
+  <img src="https://github.com/user-attachments/assets/9a2e59bc-a2aa-46e4-9361-66b0adcfe56b" alt="SPH" width="32%" />
 </p>
+
+
 
 <p align="center">
   <b>ADI (Eulerian) </b> | <b>FLIP (Hybrid Eulerian-Lagrangian)</b> | <b>SPH (Lagrangian)</b>
